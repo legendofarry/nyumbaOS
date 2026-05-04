@@ -1,0 +1,125 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function rolePath() {
+      return /databases/$(database)/documents/user_roles/$(request.auth.uid);
+    }
+
+    function role() {
+      return signedIn() && exists(rolePath()) ? get(rolePath()).data.role : null;
+    }
+
+    function isOwner() {
+      return role() == "owner";
+    }
+
+    function isAssistant() {
+      return role() == "assistant";
+    }
+
+    function isOwnerTeam() {
+      return isOwner() || isAssistant();
+    }
+
+    function isTenant() {
+      return role() == "tenant";
+    }
+
+    function ownsProfile(profileId) {
+      return signedIn() && request.auth.uid == profileId;
+    }
+
+    function ownsUnit(unitId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.unit_id == unitId;
+    }
+
+    match /profiles/{profileId} {
+      allow read: if isOwnerTeam() || ownsProfile(profileId);
+      allow create: if isOwnerTeam() || ownsProfile(profileId);
+      allow update: if isOwnerTeam() || ownsProfile(profileId);
+      allow delete: if isOwnerTeam();
+    }
+
+    match /user_roles/{userId} {
+      // Public list lets the auth screen check whether owner/assistant accounts exist.
+      // Documents contain role metadata only; keep email/phone data in profiles.
+      allow list: if true;
+      allow get: if isOwnerTeam() || ownsProfile(userId);
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.user_id == userId
+        && request.resource.data.role in ["owner", "assistant", "tenant"];
+      allow update, delete: if isOwnerTeam();
+    }
+
+    match /units/{unitId} {
+      // Public read is needed by tenant sign-in, where tenants select their unit before auth.
+      allow read: if true;
+      allow write: if isOwnerTeam();
+    }
+
+    match /invites/{inviteId} {
+      // Public read/update supports invite-code lookup and acceptance before tenant auth exists.
+      allow read: if true;
+      allow create, delete: if isOwnerTeam();
+      allow update: if isOwnerTeam()
+        || (
+          signedIn()
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["used", "used_by", "used_at"])
+          && request.resource.data.used == true
+          && request.resource.data.used_by == request.auth.uid
+        );
+    }
+
+    match /tenant_logins/{unitId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isOwnerTeam();
+    }
+
+    match /tenant_requests/{requestId} {
+      allow create: if true;
+      allow get: if true;
+      allow list: if isOwnerTeam();
+      allow update, delete: if isOwnerTeam();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isOwnerTeam() || (isTenant() && resource.data.tenant_id == request.auth.uid);
+      allow write: if isOwnerTeam();
+    }
+
+    match /readings/{readingId} {
+      allow read: if isOwnerTeam() || (isTenant() && ownsUnit(resource.data.unit_id));
+      allow write: if isOwnerTeam();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isOwnerTeam() || (isTenant() && ownsUnit(resource.data.unit_id));
+      allow create: if isOwnerTeam()
+        || (isTenant() && request.resource.data.created_by == request.auth.uid);
+      allow update, delete: if isOwnerTeam();
+    }
+
+    match /notices/{noticeId} {
+      allow read: if signedIn();
+      allow write: if isOwnerTeam();
+    }
+
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow write: if isOwnerTeam();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

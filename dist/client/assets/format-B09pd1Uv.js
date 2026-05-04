@@ -1,0 +1,1 @@
+const e=t=>`KSh ${Math.abs(t).toLocaleString("en-KE",{maximumFractionDigits:0})}`,n=t=>t===0?"Ground":t===1?"First":`${t}th`,o=t=>(typeof t=="string"?new Date(t):t).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"});export{e as K,n as a,o as f};
