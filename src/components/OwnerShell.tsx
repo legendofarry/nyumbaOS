@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, mobile: true },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true },
   { to: "/building", label: "Building", icon: Building2, mobile: true },
   { to: "/tenants", label: "Tenants", icon: Users, mobile: true },
   { to: "/rent", label: "Rent", icon: Wallet, mobile: true },
@@ -31,9 +31,9 @@ export function OwnerShell() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { navigate({ to: "/auth" }); return; }
+    if (!user) { navigate({ to: "/" }); return; }
     if (role === "tenant") { navigate({ to: "/tenant" }); return; }
-    if (role !== "owner" && role !== "assistant") { navigate({ to: "/auth" }); return; }
+    if (role !== "owner" && role !== "assistant") { navigate({ to: "/" }); return; }
   }, [loading, user, role, navigate]);
 
   if (loading || !user || (role !== "owner" && role !== "assistant")) {
@@ -55,7 +55,7 @@ export function OwnerShell() {
         <LayoutGroup id="sidebar-nav">
           <nav className="flex flex-col gap-1 mt-4">
             {nav.map((item) => {
-              const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+              const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
               const Icon = item.icon;
               return (
                 <Link key={item.to} to={item.to} className="relative flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
@@ -86,7 +86,7 @@ export function OwnerShell() {
         <LayoutGroup id="mobile-nav">
           <ul className="grid grid-cols-5 gap-1">
             {nav.filter(n => n.mobile).map((item) => {
-              const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+              const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
               const Icon = item.icon;
               return (
                 <li key={item.to}>

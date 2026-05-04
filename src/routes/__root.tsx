@@ -51,14 +51,7 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   // Public auth pages render outside shells
-  const isAuth =
-    pathname === "/auth" ||
-    pathname === "/login" ||
-    pathname === "/signup" ||
-    pathname === "/tenant-login" ||
-    pathname === "/tenant-accept" ||
-    pathname === "/tenant-register" ||
-    pathname === "/tenant-waiting";
+  const isAuth = pathname === "/";
   const isTenantApp = pathname === "/tenant" || pathname.startsWith("/tenant/");
 
   return (

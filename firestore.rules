@@ -65,30 +65,10 @@ service cloud.firestore {
       allow write: if isOwnerTeam();
     }
 
-    match /invites/{inviteId} {
-      // Public read/update supports invite-code lookup and acceptance before tenant auth exists.
-      allow read: if true;
-      allow create, delete: if isOwnerTeam();
-      allow update: if isOwnerTeam()
-        || (
-          signedIn()
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["used", "used_by", "used_at"])
-          && request.resource.data.used == true
-          && request.resource.data.used_by == request.auth.uid
-        );
-    }
-
     match /tenant_logins/{unitId} {
       allow get: if true;
       allow list: if false;
       allow create, update, delete: if isOwnerTeam();
-    }
-
-    match /tenant_requests/{requestId} {
-      allow create: if true;
-      allow get: if true;
-      allow list: if isOwnerTeam();
-      allow update, delete: if isOwnerTeam();
     }
 
     match /payments/{paymentId} {

@@ -11,18 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UtilitiesRouteImport } from './routes/utilities'
 import { Route as TenantsRouteImport } from './routes/tenants'
-import { Route as TenantWaitingRouteImport } from './routes/tenant-waiting'
-import { Route as TenantRegisterRouteImport } from './routes/tenant-register'
-import { Route as TenantLoginRouteImport } from './routes/tenant-login'
-import { Route as TenantAcceptRouteImport } from './routes/tenant-accept'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RentRouteImport } from './routes/rent'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as MaintenanceRouteImport } from './routes/maintenance'
-import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BuildingRouteImport } from './routes/building'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
 const UtilitiesRoute = UtilitiesRouteImport.update({
@@ -33,31 +27,6 @@ const UtilitiesRoute = UtilitiesRouteImport.update({
 const TenantsRoute = TenantsRouteImport.update({
   id: '/tenants',
   path: '/tenants',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantWaitingRoute = TenantWaitingRouteImport.update({
-  id: '/tenant-waiting',
-  path: '/tenant-waiting',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantRegisterRoute = TenantRegisterRouteImport.update({
-  id: '/tenant-register',
-  path: '/tenant-register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantLoginRoute = TenantLoginRouteImport.update({
-  id: '/tenant-login',
-  path: '/tenant-login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantAcceptRoute = TenantAcceptRouteImport.update({
-  id: '/tenant-accept',
-  path: '/tenant-accept',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RentRoute = RentRouteImport.update({
@@ -75,9 +44,9 @@ const MaintenanceRoute = MaintenanceRouteImport.update({
   path: '/maintenance',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarRoute = CalendarRouteImport.update({
@@ -90,11 +59,6 @@ const BuildingRoute = BuildingRouteImport.update({
   path: '/building',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -103,53 +67,35 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/building': typeof BuildingRoute
   '/calendar': typeof CalendarRoute
-  '/login': typeof LoginRoute
+  '/dashboard': typeof DashboardRoute
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
-  '/signup': typeof SignupRoute
-  '/tenant-accept': typeof TenantAcceptRoute
-  '/tenant-login': typeof TenantLoginRoute
-  '/tenant-register': typeof TenantRegisterRoute
-  '/tenant-waiting': typeof TenantWaitingRoute
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/building': typeof BuildingRoute
   '/calendar': typeof CalendarRoute
-  '/login': typeof LoginRoute
+  '/dashboard': typeof DashboardRoute
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
-  '/signup': typeof SignupRoute
-  '/tenant-accept': typeof TenantAcceptRoute
-  '/tenant-login': typeof TenantLoginRoute
-  '/tenant-register': typeof TenantRegisterRoute
-  '/tenant-waiting': typeof TenantWaitingRoute
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/building': typeof BuildingRoute
   '/calendar': typeof CalendarRoute
-  '/login': typeof LoginRoute
+  '/dashboard': typeof DashboardRoute
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
-  '/signup': typeof SignupRoute
-  '/tenant-accept': typeof TenantAcceptRoute
-  '/tenant-login': typeof TenantLoginRoute
-  '/tenant-register': typeof TenantRegisterRoute
-  '/tenant-waiting': typeof TenantWaitingRoute
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
 }
@@ -157,70 +103,46 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/building'
     | '/calendar'
-    | '/login'
+    | '/dashboard'
     | '/maintenance'
     | '/notices'
     | '/rent'
-    | '/signup'
-    | '/tenant-accept'
-    | '/tenant-login'
-    | '/tenant-register'
-    | '/tenant-waiting'
     | '/tenants'
     | '/utilities'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/building'
     | '/calendar'
-    | '/login'
+    | '/dashboard'
     | '/maintenance'
     | '/notices'
     | '/rent'
-    | '/signup'
-    | '/tenant-accept'
-    | '/tenant-login'
-    | '/tenant-register'
-    | '/tenant-waiting'
     | '/tenants'
     | '/utilities'
   id:
     | '__root__'
     | '/'
-    | '/auth'
     | '/building'
     | '/calendar'
-    | '/login'
+    | '/dashboard'
     | '/maintenance'
     | '/notices'
     | '/rent'
-    | '/signup'
-    | '/tenant-accept'
-    | '/tenant-login'
-    | '/tenant-register'
-    | '/tenant-waiting'
     | '/tenants'
     | '/utilities'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
   BuildingRoute: typeof BuildingRoute
   CalendarRoute: typeof CalendarRoute
-  LoginRoute: typeof LoginRoute
+  DashboardRoute: typeof DashboardRoute
   MaintenanceRoute: typeof MaintenanceRoute
   NoticesRoute: typeof NoticesRoute
   RentRoute: typeof RentRoute
-  SignupRoute: typeof SignupRoute
-  TenantAcceptRoute: typeof TenantAcceptRoute
-  TenantLoginRoute: typeof TenantLoginRoute
-  TenantRegisterRoute: typeof TenantRegisterRoute
-  TenantWaitingRoute: typeof TenantWaitingRoute
   TenantsRoute: typeof TenantsRoute
   UtilitiesRoute: typeof UtilitiesRoute
 }
@@ -239,41 +161,6 @@ declare module '@tanstack/react-router' {
       path: '/tenants'
       fullPath: '/tenants'
       preLoaderRoute: typeof TenantsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenant-waiting': {
-      id: '/tenant-waiting'
-      path: '/tenant-waiting'
-      fullPath: '/tenant-waiting'
-      preLoaderRoute: typeof TenantWaitingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenant-register': {
-      id: '/tenant-register'
-      path: '/tenant-register'
-      fullPath: '/tenant-register'
-      preLoaderRoute: typeof TenantRegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenant-login': {
-      id: '/tenant-login'
-      path: '/tenant-login'
-      fullPath: '/tenant-login'
-      preLoaderRoute: typeof TenantLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenant-accept': {
-      id: '/tenant-accept'
-      path: '/tenant-accept'
-      fullPath: '/tenant-accept'
-      preLoaderRoute: typeof TenantAcceptRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rent': {
@@ -297,11 +184,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendar': {
@@ -318,13 +205,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuildingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -337,18 +217,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
   BuildingRoute: BuildingRoute,
   CalendarRoute: CalendarRoute,
-  LoginRoute: LoginRoute,
+  DashboardRoute: DashboardRoute,
   MaintenanceRoute: MaintenanceRoute,
   NoticesRoute: NoticesRoute,
   RentRoute: RentRoute,
-  SignupRoute: SignupRoute,
-  TenantAcceptRoute: TenantAcceptRoute,
-  TenantLoginRoute: TenantLoginRoute,
-  TenantRegisterRoute: TenantRegisterRoute,
-  TenantWaitingRoute: TenantWaitingRoute,
   TenantsRoute: TenantsRoute,
   UtilitiesRoute: UtilitiesRoute,
 }

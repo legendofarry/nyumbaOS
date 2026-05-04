@@ -21,9 +21,9 @@ export function TenantShell() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { navigate({ to: "/login" }); return; }
+    if (!user) { navigate({ to: "/" }); return; }
     if (role === "owner" || role === "assistant") { navigate({ to: "/" }); return; }
-    if (role !== "tenant") { navigate({ to: "/login" }); return; }
+    if (role !== "tenant") { navigate({ to: "/" }); return; }
   }, [loading, user, role, navigate]);
 
   if (loading || !user || role !== "tenant") {

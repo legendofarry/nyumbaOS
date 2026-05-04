@@ -79,29 +79,6 @@ export interface CalEvent {
   created_at: string;
 }
 
-export interface Invite {
-  id: string;
-  unit_id: string;
-  code: string;
-  full_name: string;
-  phone: string | null;
-  used: boolean;
-  used_by: string | null;
-  created_at: string;
-  used_at: string | null;
-}
-
-export interface TenantRequest {
-  id: string;
-  full_name: string;
-  phone: string;
-  status: "waiting" | "approved" | "declined";
-  unit_id: string | null;
-  invite_code: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export const FLOORS: { value: number; label: string }[] = [
   { value: 0, label: "Ground" },
   { value: 1, label: "First" },

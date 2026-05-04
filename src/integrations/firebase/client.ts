@@ -332,37 +332,6 @@ export const firebaseClient = {
           });
         }
 
-        if (data.invite_code) {
-          const inviteQuery = firebaseQuery(
-            collection(db, "invites"),
-            firebaseWhere("code", "==", data.invite_code),
-            firebaseWhere("used", "==", false),
-          );
-          const inviteSnap = await getDocs(inviteQuery as any);
-          const inviteDoc = inviteSnap.docs[0];
-
-          if (inviteDoc) {
-            const invite = inviteDoc.data() as any;
-            await setDoc(doc(db, "profiles", uid), {
-              full_name: invite.full_name ?? data.full_name ?? "",
-              phone: invite.phone ?? null,
-              unit_id: invite.unit_id,
-              login_email: email,
-              created_at: now,
-              updated_at: now,
-            });
-            await setDoc(doc(db, "user_roles", uid), {
-              user_id: uid,
-              role: "tenant",
-              created_at: now,
-            });
-            await updateDoc(inviteDoc.ref, { used: true, used_by: uid, used_at: now });
-            if (invite.unit_id) {
-              await updateDoc(doc(db, "units", invite.unit_id), { status: "Occupied" });
-            }
-          }
-        }
-
         return { error: null };
       } catch (error) {
         return { error };
@@ -385,30 +354,7 @@ export const firebaseClient = {
   from(table: string) {
     return createBuilder(table);
   },
-  async rpc(name: string, params: any) {
-    if (name === "lookup_invite") {
-      const inviteQuery = firebaseQuery(
-        collection(db, "invites"),
-        firebaseWhere("code", "==", params._code),
-      );
-      const snap = await getDocs(inviteQuery as any);
-      const out: any[] = [];
-
-      for (const item of snap.docs) {
-        const invite = item.data() as any;
-        const unit = await getDoc(doc(db, "units", invite.unit_id));
-        out.push({
-          id: item.id,
-          unit_id: invite.unit_id,
-          unit_number: unit.exists() ? (unit.data() as any).number : null,
-          full_name: invite.full_name,
-          used: invite.used,
-        });
-      }
-
-      return { data: out };
-    }
-
+  async rpc(name: string, _params: any) {
     return { data: null, error: new Error(`RPC not implemented: ${name}`) };
   },
   async privilegedAccountStatus() {

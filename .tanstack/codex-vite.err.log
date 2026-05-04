@@ -11,3 +11,12 @@ ReferenceError: window is not defined
     at renderElement (C:/Users/karim/Documents/work/nyumbaos/node_modules/.vite/deps_ssr/react-dom_server.js?v=0e1cd44c:4270:13)
     at retryNode (C:/Users/karim/Documents/work/nyumbaos/node_modules/.vite/deps_ssr/react-dom_server.js?v=0e1cd44c:4946:43)
     at renderNodeDestructive (C:/Users/karim/Documents/work/nyumbaos/node_modules/.vite/deps_ssr/react-dom_server.js?v=0e1cd44c:4906:270)
+Error: EPERM: operation not permitted, rename 'C:\Users\karim\Documents\work\nyumbaos\.tanstack\tmp\e3365e8e-fa143787a639a254060408e12dbcd246' -> 'C:\Users\karim\Documents\work\nyumbaos\src\routeTree.gen.ts'
+    at file:///C:/Users/karim/Documents/work/nyumbaos/node_modules/@tanstack/router-generator/dist/esm/generator.js:127:13
+Error: EPERM: operation not permitted, rename 'C:\Users\karim\Documents\work\nyumbaos\.tanstack\tmp\e3365e8e-fa143787a639a254060408e12dbcd246' -> 'C:\Users\karim\Documents\work\nyumbaos\src\routeTree.gen.ts'
+    at file:///C:/Users/karim/Documents/work/nyumbaos/node_modules/@tanstack/router-generator/dist/esm/generator.js:127:13
+Error: EPERM: operation not permitted, rename 'C:\Users\karim\Documents\work\nyumbaos\.tanstack\tmp\e3365e8e-fa143787a639a254060408e12dbcd246' -> 'C:\Users\karim\Documents\work\nyumbaos\src\routeTree.gen.ts'
+    at file:///C:/Users/karim/Documents/work/nyumbaos/node_modules/@tanstack/router-generator/dist/esm/generator.js:127:13
+[31mfailed to load config from C:\Users\karim\Documents\work\nyumbaos\vite.config.ts[39m
+[2m1:05:35 AM[22m [31m[1m[vite][22m[39m Cannot find module 'C:\Users\karim\Documents\work\nyumbaos\node_modules\@netlify\api\node_modules\node-fetch\src\errors\base.js' imported from C:\Users\karim\Documents\work\nyumbaos\node_modules\@netlify\api\node_modules\node-fetch\src\body.js
+[2m1:05:35 AM[22m [31m[1m[vite][22m[39m server restart failed
