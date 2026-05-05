@@ -27,7 +27,10 @@ export function TenantHome() {
     ]).then(([u, p, n, t]) => {
       setUnit((u.data as Unit) ?? null);
       setPayments((p.data as Payment[]) ?? []);
-      setNotices((n.data as Notice[]) ?? []);
+      const rawNotices = (n.data as Notice[]) ?? [];
+      const now = Date.now();
+      const valid = rawNotices.filter((no) => !no.expires_at || new Date(no.expires_at).getTime() > now);
+      setNotices(valid);
       setTickets((t.data as Ticket[]) ?? []);
       setLoading(false);
     });

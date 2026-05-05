@@ -16,21 +16,37 @@ const typeStyles: Record<EventType, string> = {
 export function CalendarPage() {
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", date: new Date().toISOString().slice(0, 10), type: "Admin" as EventType });
+  const [form, setForm] = useState<any>({ title: "", date: new Date().toISOString().slice(0, 10), type: "Admin" as EventType, expiryHours: 0 });
   const confirm = useConfirm();
 
   const load = async () => {
     const { data } = await firebaseClient.from("events").select("*").order("date");
-    setEvents((data as CalEvent[]) ?? []);
+    const all = (data as CalEvent[]) ?? [];
+    const now = Date.now();
+    const valid = all.filter((e) => !e.expires_at || new Date(e.expires_at).getTime() > now);
+    setEvents(valid);
+
+    const expired = all.filter((e) => e.expires_at && new Date(e.expires_at).getTime() <= now);
+    for (const ex of expired) {
+      try {
+        await firebaseClient.from("events").delete().eq("id", ex.id);
+      } catch (_err) {
+        // ignore
+      }
+    }
   };
   useEffect(() => { load(); }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await firebaseClient.from("events").insert(form);
+    const payload: any = { title: form.title, date: form.date, type: form.type };
+    if (form.expiryHours && Number(form.expiryHours) > 0) {
+      payload.expires_at = new Date(Date.now() + Number(form.expiryHours) * 3600 * 1000).toISOString();
+    }
+    const { error } = await firebaseClient.from("events").insert(payload);
     if (error) { toast.error(error.message); return; }
     toast.success("Event added");
-    setForm({ title: "", date: new Date().toISOString().slice(0, 10), type: "Admin" });
+    setForm({ title: "", date: new Date().toISOString().slice(0, 10), type: "Admin", expiryHours: 0 });
     setOpen(false);
     load();
   };
@@ -99,6 +115,14 @@ export function CalendarPage() {
           <Field label="Type">
             <select className={inputCls} value={form.type} onChange={e => setForm({ ...form, type: e.target.value as EventType })}>
               <option>Admin</option><option>Move-in</option><option>Inspection</option>
+            </select>
+          </Field>
+          <Field label="Auto-expire">
+            <select className={inputCls} value={form.expiryHours} onChange={e => setForm({ ...form, expiryHours: Number(e.target.value) })}>
+              <option value={0}>Never</option>
+              <option value={24}>24 hours</option>
+              <option value={48}>48 hours</option>
+              <option value={72}>72 hours</option>
             </select>
           </Field>
           <PrimaryBtn type="submit">Save</PrimaryBtn>

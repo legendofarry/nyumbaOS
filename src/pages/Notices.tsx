@@ -11,7 +11,7 @@ import { streamAi } from "@/lib/ai";
 export function Notices() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", body: "", pinned: false });
+  const [form, setForm] = useState<any>({ title: "", body: "", pinned: false, expiryHours: 0 });
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const confirm = useConfirm();
@@ -19,16 +19,34 @@ export function Notices() {
 
   const load = async () => {
     const { data } = await firebaseClient.from("notices").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false });
-    setNotices((data as Notice[]) ?? []);
+    const all = (data as Notice[]) ?? [];
+    const now = Date.now();
+    const valid = all.filter((n) => !n.expires_at || new Date(n.expires_at).getTime() > now);
+    setNotices(valid);
+
+    // Attempt cleanup of expired notices (owner/assistant only will succeed)
+    const expired = all.filter((n) => n.expires_at && new Date(n.expires_at).getTime() <= now);
+    for (const e of expired) {
+      try {
+        // best-effort delete; ignore errors (e.g., lack of permissions)
+        await firebaseClient.from("notices").delete().eq("id", e.id);
+      } catch (_err) {
+        // ignore
+      }
+    }
   };
   useEffect(() => { load(); }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await firebaseClient.from("notices").insert(form);
+    const payload: any = { title: form.title, body: form.body, pinned: Boolean(form.pinned) };
+    if (form.expiryHours && Number(form.expiryHours) > 0) {
+      payload.expires_at = new Date(Date.now() + Number(form.expiryHours) * 3600 * 1000).toISOString();
+    }
+    const { error } = await firebaseClient.from("notices").insert(payload);
     if (error) { toast.error(error.message); return; }
     toast.success("Notice posted");
-    setForm({ title: "", body: "", pinned: false });
+    setForm({ title: "", body: "", pinned: false, expiryHours: 0 });
     setAiPrompt("");
     setOpen(false);
     load();
@@ -102,6 +120,14 @@ export function Notices() {
           </div>
 
           <Field label="Body"><textarea ref={bodyRef} className={inputCls} rows={5} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} required /></Field>
+          <Field label="Auto-expire">
+            <select className={inputCls} value={form.expiryHours} onChange={e => setForm({ ...form, expiryHours: Number(e.target.value) })}>
+              <option value={0}>Never</option>
+              <option value={24}>24 hours</option>
+              <option value={48}>48 hours</option>
+              <option value={72}>72 hours</option>
+            </select>
+          </Field>
           <label className="inline-flex items-center gap-2 text-sm font-semibold">
             <input type="checkbox" checked={form.pinned} onChange={e => setForm({ ...form, pinned: e.target.checked })} className="h-4 w-4" />
             Pin to top

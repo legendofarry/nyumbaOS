@@ -10,7 +10,10 @@ export function TenantNotices() {
 
   useEffect(() => {
     firebaseClient.from("notices").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false }).then(({ data }) => {
-      setNotices((data as Notice[]) ?? []);
+      const all = (data as Notice[]) ?? [];
+      const now = Date.now();
+      const valid = all.filter((n) => !n.expires_at || new Date(n.expires_at).getTime() > now);
+      setNotices(valid);
       setLoading(false);
     });
   }, []);

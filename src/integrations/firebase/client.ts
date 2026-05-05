@@ -99,6 +99,7 @@ function normalizeRow(table: string, id: string, data: any) {
     created_at: normalizeDate(data.created_at),
     updated_at: normalizeDate(data.updated_at),
     date: normalizeDate(data.date),
+    expires_at: normalizeDate(data.expires_at),
   };
 
   if (table === "units") {

@@ -33,13 +33,25 @@ export function Dashboard() {
         const tenantIds = new Set(((roles.data as any[]) ?? []).map((role) => role.user_id));
         const tenants = ((profiles.data as Profile[]) ?? []).filter((profile) => tenantIds.has(profile.id) && profile.unit_id);
 
+        // Filter expired notices (and attempt best-effort cleanup)
+        const rawNotices = (n.data as Notice[]) ?? [];
+        const now = Date.now();
+        const noticesFiltered = rawNotices.filter((no) => !no.expires_at || new Date(no.expires_at).getTime() > now);
+        // Best-effort delete expired (owner only will succeed)
+        (async () => {
+          const expired = rawNotices.filter((no) => no.expires_at && new Date(no.expires_at).getTime() <= now);
+          for (const ex of expired) {
+            try { await firebaseClient.from("notices").delete().eq("id", ex.id); } catch (_e) { }
+          }
+        })();
+
         setData({
           units: (u.data as Unit[]) ?? [],
           tenants,
           payments: (p.data as Payment[]) ?? [],
           tickets: (ti.data as Ticket[]) ?? [],
           readings: (r.data as Reading[]) ?? [],
-          notices: (n.data as Notice[]) ?? [],
+          notices: noticesFiltered,
         });
       } catch (err: any) {
         const message = err?.message ?? "Could not load dashboard data.";

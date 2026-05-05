@@ -69,6 +69,7 @@ export interface Notice {
   body: string;
   pinned: boolean;
   created_at: string;
+  expires_at?: string | null;
 }
 
 export interface CalEvent {
@@ -77,6 +78,7 @@ export interface CalEvent {
   date: string;
   type: EventType;
   created_at: string;
+  expires_at?: string | null;
 }
 
 export const FLOORS: { value: number; label: string }[] = [
