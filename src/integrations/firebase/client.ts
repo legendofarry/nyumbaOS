@@ -116,6 +116,52 @@ function normalizeRow(table: string, id: string, data: any) {
   return row;
 }
 
+function withInsertDefaults(table: string, data: any) {
+  const now = new Date().toISOString();
+  const item = { ...data };
+
+  if (!item.created_at) item.created_at = now;
+
+  if (table === "units") {
+    item.number = String(item.number ?? "");
+    item.floor = normalizeFloor(item.floor);
+    item.bedrooms = normalizeBedrooms(item.bedrooms);
+    item.rent = Number(item.rent ?? 0);
+    item.status = normalizeStatus(item.status);
+  }
+
+  if (table === "profiles") {
+    if (!item.updated_at) item.updated_at = now;
+    if (item.phone === undefined) item.phone = null;
+    if (item.unit_id === undefined) item.unit_id = null;
+  }
+
+  if (table === "payments") {
+    if (!item.date) item.date = now.slice(0, 10);
+    if (item.note === undefined) item.note = null;
+    item.amount = Number(item.amount ?? 0);
+  }
+
+  if (table === "tickets") {
+    if (item.description === undefined) item.description = null;
+    if (item.unit_id === undefined) item.unit_id = null;
+    if (item.created_by === undefined) item.created_by = null;
+    if (!item.priority) item.priority = "Normal";
+    if (!item.status) item.status = "Open";
+    item.cost = Number(item.cost ?? 0);
+  }
+
+  if (table === "notices") {
+    item.pinned = Boolean(item.pinned);
+  }
+
+  if (table === "readings" || table === "events") {
+    if (!item.date) item.date = now.slice(0, 10);
+  }
+
+  return item;
+}
+
 function setRememberUntil(rememberForWeek?: boolean) {
   if (typeof window === "undefined") return;
 
@@ -230,7 +276,8 @@ function createBuilder(table: string) {
       try {
         if (Array.isArray(insertData)) {
           const results: any[] = [];
-          for (const item of insertData) {
+          for (const rawItem of insertData) {
+            const item = withInsertDefaults(table, rawItem);
             if (item.id) {
               await setDoc(doc(db, table, item.id), item);
               results.push({ id: item.id, ...item });
@@ -242,13 +289,14 @@ function createBuilder(table: string) {
           return { data: results };
         }
 
-        if (insertData?.id) {
-          await setDoc(doc(db, table, insertData.id), insertData);
-          return { data: [{ id: insertData.id, ...insertData }] };
+        const item = withInsertDefaults(table, insertData);
+        if (item?.id) {
+          await setDoc(doc(db, table, item.id), item);
+          return { data: [{ id: item.id, ...item }] };
         }
 
-        const result = await addDoc(colRef, insertData);
-        return { data: [{ id: result.id, ...insertData }] };
+        const result = await addDoc(colRef, item);
+        return { data: [{ id: result.id, ...item }] };
       } catch (error) {
         return { data: null, error };
       }

@@ -6,6 +6,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true },
@@ -23,6 +24,12 @@ export function OwnerShell() {
   const { loading, user, role, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const confirm = useConfirm();
+
+  const confirmSignOut = async () => {
+    if (!(await confirm({ title: "Sign out?", description: "You will need to log in again to access the app.", confirmText: "Sign out" }))) return;
+    await signOut();
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -70,7 +77,7 @@ export function OwnerShell() {
         <div className="mt-auto tile p-4">
           <div className="text-xs text-muted-foreground">Signed in as</div>
           <div className="font-semibold mt-1 truncate">{profile?.full_name || user.email}</div>
-          <button onClick={signOut} className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-2xl bg-muted text-sm font-bold hover:bg-foreground hover:text-background transition-colors">
+          <button onClick={confirmSignOut} className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-2xl bg-muted text-sm font-bold hover:bg-foreground hover:text-background transition-colors">
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
         </div>
@@ -118,7 +125,7 @@ export function OwnerShell() {
                   </Link>
                 );
               })}
-              <button onClick={signOut} className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-destructive/10 text-destructive text-[10px] font-bold">
+              <button onClick={confirmSignOut} className="flex flex-col items-center gap-1 p-3 rounded-2xl bg-destructive/10 text-destructive text-[10px] font-bold">
                 <LogOut className="h-5 w-5" />
                 <span>Sign out</span>
               </button>

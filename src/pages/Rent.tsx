@@ -13,7 +13,7 @@ export function Rent() {
   const [tenants, setTenants] = useState<Profile[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ tenant_id: "", amount: 0, type: "Rent" as PaymentType, date: new Date().toISOString().slice(0, 10), note: "" });
+  const [form, setForm] = useState({ tenant_id: "", amount: 0, type: "Rent" as PaymentType, date: new Date().toISOString().slice(0, 10), note: "", kind: "payment" as "payment" | "charge" });
   const confirm = useConfirm();
 
   const load = async () => {
@@ -37,10 +37,16 @@ export function Rent() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.tenant_id || !form.amount) return;
-    const { error } = await firebaseClient.from("payments").insert(form);
+    const amount = Math.abs(Number(form.amount)) * (form.kind === "charge" ? -1 : 1);
+    const { kind, ...entry } = form;
+    const { error } = await firebaseClient.from("payments").insert({
+      ...entry,
+      amount,
+      note: form.kind === "charge" ? `Charge due${form.note ? `: ${form.note}` : ""}` : form.note,
+    });
     if (error) { toast.error(error.message); return; }
-    toast.success("Payment recorded");
-    setForm({ tenant_id: "", amount: 0, type: "Rent", date: new Date().toISOString().slice(0, 10), note: "" });
+    toast.success(form.kind === "charge" ? "Charge recorded" : "Payment recorded");
+    setForm({ tenant_id: "", amount: 0, type: "Rent", date: new Date().toISOString().slice(0, 10), note: "", kind: "payment" });
     setOpen(false);
     load();
   };
@@ -81,7 +87,7 @@ export function Rent() {
       <div className="tile p-6 bg-foreground text-background">
         <div className="text-xs uppercase tracking-widest opacity-70">This month</div>
         <div className="text-4xl font-black mt-2">{KSH(monthTotal)}</div>
-        <div className="text-xs opacity-70 mt-1">{payments.filter(p => new Date(p.date).getMonth() === new Date().getMonth()).length} payments</div>
+        <div className="text-xs opacity-70 mt-1">Net collected after charges this month</div>
       </div>
 
       {/* Desktop table */}
@@ -100,7 +106,7 @@ export function Rent() {
                   <td className="p-3 text-sm font-semibold">{t?.full_name ?? "—"}</td>
                   <td className="p-3 text-sm text-muted-foreground">{u?.number ?? "—"}</td>
                   <td className="p-3"><span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-muted">{p.type}</span></td>
-                  <td className="p-3 text-right font-mono font-bold">{KSH(Number(p.amount))}</td>
+                  <td className={`p-3 text-right font-mono font-bold ${Number(p.amount) < 0 ? "text-destructive" : ""}`}>{Number(p.amount) < 0 ? "-" : ""}{KSH(Number(p.amount))}</td>
                   <td className="p-3 text-right"><button onClick={() => handleDelete(p.id)}><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></td>
                 </tr>
               );
@@ -121,7 +127,7 @@ export function Rent() {
                 <div className="text-xs text-muted-foreground">{p.type} · {fmtDate(p.date)}</div>
               </div>
               <div className="text-right">
-                <div className="font-mono font-black text-success">{KSH(Number(p.amount))}</div>
+                <div className={`font-mono font-black ${Number(p.amount) < 0 ? "text-destructive" : "text-success"}`}>{Number(p.amount) < 0 ? "-" : ""}{KSH(Number(p.amount))}</div>
                 <button onClick={() => handleDelete(p.id)} className="mt-1"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></button>
               </div>
             </div>
@@ -139,13 +145,19 @@ export function Rent() {
           </Field>
           <Field label="Type">
             <select className={inputCls} value={form.type} onChange={e => setForm({ ...form, type: e.target.value as PaymentType })}>
-              <option>Rent</option><option>Water</option><option>Service</option>
+              <option>Rent</option><option>Deposit</option><option>Water</option><option>Electricity</option><option>Garbage</option><option>Security</option><option>Service</option><option>Other</option>
+            </select>
+          </Field>
+          <Field label="Entry kind">
+            <select className={inputCls} value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value as "payment" | "charge" })}>
+              <option value="payment">Money received</option>
+              <option value="charge">Charge / debt due</option>
             </select>
           </Field>
           <Field label="Amount (KSh)"><input type="number" className={inputCls} value={form.amount || ""} onChange={e => setForm({ ...form, amount: Number(e.target.value) })} required /></Field>
           <Field label="Date"><input type="date" className={inputCls} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required /></Field>
           <Field label="Note (optional)"><input className={inputCls} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></Field>
-          <PrimaryBtn type="submit">Save</PrimaryBtn>
+          <PrimaryBtn type="submit">{form.kind === "charge" ? "Record charge" : "Save payment"}</PrimaryBtn>
         </form>
       </Modal>
     </div>

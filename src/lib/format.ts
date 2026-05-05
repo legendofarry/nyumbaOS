@@ -9,7 +9,9 @@ export const floorLabel = (f: number) =>
 
 export const floorShort = (f: number) => (f === 0 ? "G" : `${f}`);
 
-export const fmtDate = (d: string | Date) => {
+export const fmtDate = (d?: string | Date | null) => {
+  if (!d) return "Unknown date";
   const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "Unknown date";
   return date.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
 };

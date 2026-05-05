@@ -7,10 +7,12 @@ import { Field, inputCls, PrimaryBtn } from "@/components/Modal";
 import type { TenantLoginRef, Unit } from "@/lib/types";
 import { tenantSignupEmail } from "@/lib/tenantEmail";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 type Flow = "login" | "signup";
 type Actor = "tenant" | "management";
 type ManagementRole = "owner" | "assistant";
+type TenantLoginMode = "invited" | "waiting";
 
 const roleCopy = {
   owner: { label: "Owner", dataKey: "owner_code", placeholder: "OWNER2026" },
@@ -19,8 +21,10 @@ const roleCopy = {
 
 export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
   const nav = useNavigate();
+  const { loading: authLoading, user, role } = useAuth();
   const [flow, setFlow] = useState<Flow>(initialFlow);
   const [actor, setActor] = useState<Actor>("tenant");
+  const [tenantLoginMode, setTenantLoginMode] = useState<TenantLoginMode>("invited");
   const [managementRole, setManagementRole] = useState<ManagementRole>("owner");
   const [units, setUnits] = useState<Unit[]>([]);
   const [tenant, setTenant] = useState({ unit_id: "", phone: "", full_name: "", password: "" });
@@ -38,6 +42,11 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
   }, []);
 
   useEffect(() => {
+    if (authLoading || !user || !role) return;
+    nav({ to: role === "tenant" ? "/tenant" : "/dashboard", replace: true });
+  }, [authLoading, user, role, nav]);
+
+  useEffect(() => {
     if (actor !== "management" || flow !== "signup") return;
     if (status.owner && status.assistant) {
       setFlow("login");
@@ -53,6 +62,18 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
   };
 
   const signInTenant = async () => {
+    if (tenantLoginMode === "waiting") {
+      if (!tenant.phone.trim()) throw new Error("Enter the phone number you registered with.");
+      const { error } = await firebaseClient.auth.signInWithPassword({
+        email: tenantSignupEmail(tenant.phone),
+        password: tenant.password,
+        rememberForWeek,
+      });
+      if (error) throw error;
+      nav({ to: "/tenant" });
+      return;
+    }
+
     const unit = units.find((item) => item.id === tenant.unit_id);
     if (!unit) throw new Error("Select your unit.");
 
@@ -173,16 +194,34 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
           >
             {actor === "tenant" && flow === "login" && (
               <>
-                <Field label="Your unit">
-                  <select className={inputCls} value={tenant.unit_id} onChange={(e) => setTenant({ ...tenant, unit_id: e.target.value })} required>
-                    <option value="">Select your unit...</option>
-                    {units.map((unit) => (
-                      <option key={unit.id} value={unit.id}>
-                        Unit {unit.number} - {unit.bedrooms}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-2xl">
+                  {(["invited", "waiting"] as const).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setTenantLoginMode(item)}
+                      className={`py-2 rounded-xl text-sm font-bold ${tenantLoginMode === item ? "bg-foreground text-background" : "text-muted-foreground"}`}
+                    >
+                      {item === "invited" ? "I have a unit" : "Waiting"}
+                    </button>
+                  ))}
+                </div>
+                {tenantLoginMode === "invited" ? (
+                  <Field label="Your unit">
+                    <select className={inputCls} value={tenant.unit_id} onChange={(e) => setTenant({ ...tenant, unit_id: e.target.value })} required>
+                      <option value="">Select your unit...</option>
+                      {units.map((unit) => (
+                        <option key={unit.id} value={unit.id}>
+                          Unit {unit.number} - {unit.bedrooms}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <Field label="Phone number">
+                    <input className={inputCls} value={tenant.phone} onChange={(e) => setTenant({ ...tenant, phone: e.target.value })} required placeholder="+254..." />
+                  </Field>
+                )}
                 <Field label="Password">
                   <input type="password" className={inputCls} value={tenant.password} onChange={(e) => setTenant({ ...tenant, password: e.target.value })} required />
                 </Field>

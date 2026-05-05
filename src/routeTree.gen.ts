@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UtilitiesRouteImport } from './routes/utilities'
 import { Route as TenantsRouteImport } from './routes/tenants'
+import { Route as TenantRouteImport } from './routes/tenant'
 import { Route as RentRouteImport } from './routes/rent'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as MaintenanceRouteImport } from './routes/maintenance'
@@ -18,6 +19,10 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BuildingRouteImport } from './routes/building'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TenantUtilitiesRouteImport } from './routes/tenant.utilities'
+import { Route as TenantNoticesRouteImport } from './routes/tenant.notices'
+import { Route as TenantMaintenanceRouteImport } from './routes/tenant.maintenance'
+import { Route as TenantBillingRouteImport } from './routes/tenant.billing'
 
 const UtilitiesRoute = UtilitiesRouteImport.update({
   id: '/utilities',
@@ -27,6 +32,11 @@ const UtilitiesRoute = UtilitiesRouteImport.update({
 const TenantsRoute = TenantsRouteImport.update({
   id: '/tenants',
   path: '/tenants',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantRoute = TenantRouteImport.update({
+  id: '/tenant',
+  path: '/tenant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RentRoute = RentRouteImport.update({
@@ -64,6 +74,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TenantUtilitiesRoute = TenantUtilitiesRouteImport.update({
+  id: '/utilities',
+  path: '/utilities',
+  getParentRoute: () => TenantRoute,
+} as any)
+const TenantNoticesRoute = TenantNoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => TenantRoute,
+} as any)
+const TenantMaintenanceRoute = TenantMaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => TenantRoute,
+} as any)
+const TenantBillingRoute = TenantBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => TenantRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,8 +103,13 @@ export interface FileRoutesByFullPath {
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
+  '/tenant': typeof TenantRouteWithChildren
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
+  '/tenant/billing': typeof TenantBillingRoute
+  '/tenant/maintenance': typeof TenantMaintenanceRoute
+  '/tenant/notices': typeof TenantNoticesRoute
+  '/tenant/utilities': typeof TenantUtilitiesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +119,13 @@ export interface FileRoutesByTo {
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
+  '/tenant': typeof TenantRouteWithChildren
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
+  '/tenant/billing': typeof TenantBillingRoute
+  '/tenant/maintenance': typeof TenantMaintenanceRoute
+  '/tenant/notices': typeof TenantNoticesRoute
+  '/tenant/utilities': typeof TenantUtilitiesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +136,13 @@ export interface FileRoutesById {
   '/maintenance': typeof MaintenanceRoute
   '/notices': typeof NoticesRoute
   '/rent': typeof RentRoute
+  '/tenant': typeof TenantRouteWithChildren
   '/tenants': typeof TenantsRoute
   '/utilities': typeof UtilitiesRoute
+  '/tenant/billing': typeof TenantBillingRoute
+  '/tenant/maintenance': typeof TenantMaintenanceRoute
+  '/tenant/notices': typeof TenantNoticesRoute
+  '/tenant/utilities': typeof TenantUtilitiesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +154,13 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/notices'
     | '/rent'
+    | '/tenant'
     | '/tenants'
     | '/utilities'
+    | '/tenant/billing'
+    | '/tenant/maintenance'
+    | '/tenant/notices'
+    | '/tenant/utilities'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +170,13 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/notices'
     | '/rent'
+    | '/tenant'
     | '/tenants'
     | '/utilities'
+    | '/tenant/billing'
+    | '/tenant/maintenance'
+    | '/tenant/notices'
+    | '/tenant/utilities'
   id:
     | '__root__'
     | '/'
@@ -131,8 +186,13 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/notices'
     | '/rent'
+    | '/tenant'
     | '/tenants'
     | '/utilities'
+    | '/tenant/billing'
+    | '/tenant/maintenance'
+    | '/tenant/notices'
+    | '/tenant/utilities'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,6 +203,7 @@ export interface RootRouteChildren {
   MaintenanceRoute: typeof MaintenanceRoute
   NoticesRoute: typeof NoticesRoute
   RentRoute: typeof RentRoute
+  TenantRoute: typeof TenantRouteWithChildren
   TenantsRoute: typeof TenantsRoute
   UtilitiesRoute: typeof UtilitiesRoute
 }
@@ -161,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/tenants'
       fullPath: '/tenants'
       preLoaderRoute: typeof TenantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenant': {
+      id: '/tenant'
+      path: '/tenant'
+      fullPath: '/tenant'
+      preLoaderRoute: typeof TenantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rent': {
@@ -212,8 +280,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tenant/utilities': {
+      id: '/tenant/utilities'
+      path: '/utilities'
+      fullPath: '/tenant/utilities'
+      preLoaderRoute: typeof TenantUtilitiesRouteImport
+      parentRoute: typeof TenantRoute
+    }
+    '/tenant/notices': {
+      id: '/tenant/notices'
+      path: '/notices'
+      fullPath: '/tenant/notices'
+      preLoaderRoute: typeof TenantNoticesRouteImport
+      parentRoute: typeof TenantRoute
+    }
+    '/tenant/maintenance': {
+      id: '/tenant/maintenance'
+      path: '/maintenance'
+      fullPath: '/tenant/maintenance'
+      preLoaderRoute: typeof TenantMaintenanceRouteImport
+      parentRoute: typeof TenantRoute
+    }
+    '/tenant/billing': {
+      id: '/tenant/billing'
+      path: '/billing'
+      fullPath: '/tenant/billing'
+      preLoaderRoute: typeof TenantBillingRouteImport
+      parentRoute: typeof TenantRoute
+    }
   }
 }
+
+interface TenantRouteChildren {
+  TenantBillingRoute: typeof TenantBillingRoute
+  TenantMaintenanceRoute: typeof TenantMaintenanceRoute
+  TenantNoticesRoute: typeof TenantNoticesRoute
+  TenantUtilitiesRoute: typeof TenantUtilitiesRoute
+}
+
+const TenantRouteChildren: TenantRouteChildren = {
+  TenantBillingRoute: TenantBillingRoute,
+  TenantMaintenanceRoute: TenantMaintenanceRoute,
+  TenantNoticesRoute: TenantNoticesRoute,
+  TenantUtilitiesRoute: TenantUtilitiesRoute,
+}
+
+const TenantRouteWithChildren =
+  TenantRoute._addFileChildren(TenantRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -223,6 +336,7 @@ const rootRouteChildren: RootRouteChildren = {
   MaintenanceRoute: MaintenanceRoute,
   NoticesRoute: NoticesRoute,
   RentRoute: RentRoute,
+  TenantRoute: TenantRouteWithChildren,
   TenantsRoute: TenantsRoute,
   UtilitiesRoute: UtilitiesRoute,
 }

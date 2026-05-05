@@ -22,10 +22,12 @@ export async function streamAi({
   onDelta: (chunk: string) => void;
   onDone?: () => void;
   signal?: AbortSignal;
-}) {
+}): Promise<boolean> {
   if (!OPENROUTER_KEY && AI_URL === OPENROUTER_URL) {
     toast.error("OpenRouter key not configured (VITE_OPENROUTER_API_KEY).");
-    return;
+    onDelta("AI is not configured. Add VITE_OPENROUTER_API_KEY in Netlify environment variables.");
+    onDone?.();
+    return false;
   }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -63,12 +65,36 @@ export async function streamAi({
     });
   } catch {
     toast.error("AI unreachable");
-    return;
+    onDelta("AI is unreachable. Check the OpenRouter key, model, and network access.");
+    onDone?.();
+    return false;
   }
 
-  if (resp.status === 429) { toast.error("AI is busy. Try again shortly."); return; }
-  if (resp.status === 402) { toast.error("AI credits exhausted. Check your OpenRouter account."); return; }
-  if (!resp.ok || !resp.body) { toast.error("AI failed"); return; }
+  if (resp.status === 429) {
+    toast.error("AI is busy. Try again shortly.");
+    onDelta("AI is busy. Try again shortly.");
+    onDone?.();
+    return false;
+  }
+  if (resp.status === 402) {
+    toast.error("AI credits exhausted. Check your OpenRouter account.");
+    onDelta("AI credits are exhausted. Check your OpenRouter account.");
+    onDone?.();
+    return false;
+  }
+  if (!resp.ok) {
+    const detail = await resp.text().catch(() => "");
+    toast.error("AI failed");
+    onDelta(detail ? `AI failed: ${detail.slice(0, 240)}` : "AI failed. Check your OpenRouter configuration.");
+    onDone?.();
+    return false;
+  }
+  if (!resp.body) {
+    toast.error("AI response was empty");
+    onDelta("AI response was empty.");
+    onDone?.();
+    return false;
+  }
 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
@@ -106,4 +132,5 @@ export async function streamAi({
   }
 
   onDone?.();
+  return true;
 }

@@ -3,7 +3,7 @@ export type UnitStatus = "Occupied" | "Vacant" | "Maintenance";
 export type BedroomType = "Bedsitter" | "1 Bedroom" | "2 Bedroom" | "3 Bedroom" | "4 Bedroom";
 export type Priority = "Emergency" | "High" | "Normal";
 export type TicketStatus = "Open" | "In Progress" | "Done";
-export type PaymentType = "Rent" | "Water" | "Service";
+export type PaymentType = "Rent" | "Deposit" | "Water" | "Electricity" | "Garbage" | "Security" | "Service" | "Other";
 export type EventType = "Move-in" | "Inspection" | "Admin";
 
 export interface Unit {

@@ -38,7 +38,7 @@ export function TenantBilling() {
       <div className={`tile p-6 ${balance < 0 ? "bg-destructive text-destructive-foreground" : "bg-foreground text-background"}`}>
         <div className="text-xs uppercase tracking-widest opacity-80">{balance < 0 ? "Amount due" : "Balance"}</div>
         <div className="text-4xl font-black mt-2">{KSH(balance)}</div>
-        {unit && <div className="text-xs opacity-80 mt-2">Monthly rent: {KSH(Number(unit.rent))}</div>}
+        {unit && <div className="text-xs opacity-80 mt-2">Monthly rent: {KSH(Number(unit.rent))} + deposit: {KSH(Number(unit.rent))}</div>}
       </div>
 
       <section>
@@ -50,7 +50,7 @@ export function TenantBilling() {
                 <div className="font-bold text-sm">{p.type}</div>
                 <div className="text-xs text-muted-foreground">{fmtDate(p.date)} {p.note ? `· ${p.note}` : ""}</div>
               </div>
-              <div className="font-mono font-black text-success">{KSH(Number(p.amount))}</div>
+              <div className={`font-mono font-black ${Number(p.amount) < 0 ? "text-destructive" : "text-success"}`}>{Number(p.amount) < 0 ? "-" : ""}{KSH(Number(p.amount))}</div>
             </div>
           ))}
           {!payments.length && <p className="text-sm text-muted-foreground tile p-6 text-center">No payments recorded yet.</p>}
