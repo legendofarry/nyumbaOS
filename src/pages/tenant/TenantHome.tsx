@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Wallet, Wrench, Megaphone, Droplets, Loader2 } from "lucide-react";
 import { firebaseClient } from "@/integrations/firebase/client";
 import { useAuth } from "@/lib/auth";
-import { KSH, fmtDate } from "@/lib/format";
+import { KSH, fmtDate, floorLabel } from "@/lib/format";
 import { computeBalance } from "@/lib/balance";
 import { AiAssistant } from "@/components/AiAssistant";
 import type { Unit, Payment, Notice, Ticket } from "@/lib/types";
@@ -43,7 +43,7 @@ export function TenantHome() {
       <header>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Welcome</p>
         <h1 className="text-3xl sm:text-4xl font-black mt-2">Hi, {profile?.full_name?.split(" ")[0] || "there"}</h1>
-        {unit && <p className="text-sm text-muted-foreground mt-1">Unit {unit.number} · {unit.floor === 0 ? "Ground" : "First"} floor · {unit.bedrooms}</p>}
+        {unit && <p className="text-sm text-muted-foreground mt-1">Unit {unit.number} - {floorLabel(unit.floor)} floor - {unit.bedrooms}</p>}
       </header>
 
       {/* Balance hero */}

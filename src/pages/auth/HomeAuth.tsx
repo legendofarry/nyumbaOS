@@ -5,7 +5,7 @@ import { Building2, Home, Loader2 } from "lucide-react";
 import { firebaseClient } from "@/integrations/firebase/client";
 import { Field, inputCls, PrimaryBtn } from "@/components/Modal";
 import type { TenantLoginRef, Unit } from "@/lib/types";
-import { tenantEmail, tenantSignupEmail } from "@/lib/tenantEmail";
+import { tenantSignupEmail } from "@/lib/tenantEmail";
 import { toast } from "sonner";
 
 type Flow = "login" | "signup";
@@ -30,14 +30,19 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
   const [status, setStatus] = useState({ owner: true, assistant: true, loading: true });
 
   useEffect(() => {
-    firebaseClient.from("units").select("*").order("floor").order("number").then(({ data }) => {
-      setUnits(((data as Unit[]) ?? []).filter((unit) => unit.status !== "Vacant"));
+    firebaseClient.from("units").select("*").order("floor").order("number").then(({ data, error }) => {
+      if (error) toast.error(error.message ?? "Could not load units");
+      setUnits((data as Unit[]) ?? []);
     });
     firebaseClient.privilegedAccountStatus().then((next) => setStatus({ ...next, loading: false }));
   }, []);
 
   useEffect(() => {
     if (actor !== "management" || flow !== "signup") return;
+    if (status.owner && status.assistant) {
+      setFlow("login");
+      return;
+    }
     if (managementRole === "owner" && status.owner && !status.assistant) setManagementRole("assistant");
     if (managementRole === "assistant" && status.assistant && !status.owner) setManagementRole("owner");
   }, [actor, flow, managementRole, status]);
@@ -53,9 +58,11 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
 
     const { data: loginRef } = await firebaseClient.from("tenant_logins").select("*").eq("id", unit.id).maybeSingle();
     const mappedEmail = (loginRef as TenantLoginRef | null)?.login_email;
-    const email = mappedEmail || tenantEmail(unit.id);
+    if (!mappedEmail) {
+      throw new Error("This unit has not been invited to a tenant account yet.");
+    }
     const { error } = await firebaseClient.auth.signInWithPassword({
-      email,
+      email: mappedEmail,
       password: tenant.password,
       rememberForWeek,
     });
@@ -126,6 +133,7 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
     actor === "management" &&
     flow === "signup" &&
     ((managementRole === "owner" && status.owner) || (managementRole === "assistant" && status.assistant));
+  const allManagementAccountsExist = !status.loading && status.owner && status.assistant;
 
   return (
     <div className="min-h-screen grid place-items-center bg-background p-4">
@@ -253,7 +261,7 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
               className="text-sm font-bold text-muted-foreground hover:text-foreground"
             >
               {actor === "tenant"
-                ? flow === "login" ? "Sign in as management" : "Create management account"
+                ? flow === "login" ? "Sign in as management" : allManagementAccountsExist ? "Sign in as management" : "Create management account"
                 : flow === "login" ? "Back to tenant login" : "Back to tenant signup"}
             </button>
           </motion.form>

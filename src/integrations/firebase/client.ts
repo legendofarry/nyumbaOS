@@ -18,7 +18,6 @@ import {
   getDocs,
   getFirestore,
   limit as firebaseLimit,
-  orderBy as firebaseOrderBy,
   query as firebaseQuery,
   setDoc,
   updateDoc,
@@ -56,6 +55,65 @@ export const db = getFirestore(firebaseApp);
 const REMEMBER_UNTIL_KEY = "nyumbaos.auth.rememberUntil";
 const OWNER_CODE = "OWNER2026";
 const ASSISTANT_CODE = "ASSISTANT2026";
+
+function normalizeDate(value: any) {
+  if (!value) return value;
+  if (typeof value === "string") return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function normalizeFloor(value: any) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const text = String(value ?? "0").trim().toLowerCase();
+  if (!text || text === "ground" || text === "g") return 0;
+  if (text === "first" || text === "1st") return 1;
+  if (text === "second" || text === "2nd") return 2;
+  if (text === "third" || text === "3rd") return 3;
+  const match = text.match(/-?\d+/);
+  return match ? Number(match[0]) : 0;
+}
+
+function normalizeStatus(value: any) {
+  const text = String(value ?? "Vacant").trim().toLowerCase();
+  if (text === "occupied") return "Occupied";
+  if (text === "maintenance") return "Maintenance";
+  return "Vacant";
+}
+
+function normalizeBedrooms(value: any) {
+  const text = String(value ?? "Bedsitter").trim();
+  const lower = text.toLowerCase();
+  if (lower === "bedsitter" || lower === "studio") return "Bedsitter";
+  const match = lower.match(/\d+/);
+  if (match) return `${Number(match[0])} Bedroom`;
+  return text;
+}
+
+function normalizeRow(table: string, id: string, data: any) {
+  const row = {
+    id,
+    ...data,
+    created_at: normalizeDate(data.created_at),
+    updated_at: normalizeDate(data.updated_at),
+    date: normalizeDate(data.date),
+  };
+
+  if (table === "units") {
+    return {
+      ...row,
+      number: String(data.number ?? data.unit_number ?? data.name ?? id),
+      floor: normalizeFloor(data.floor),
+      bedrooms: normalizeBedrooms(data.bedrooms ?? data.type ?? data.bedroom_type),
+      rent: Number(data.rent ?? data.monthly_rent ?? 0),
+      status: normalizeStatus(data.status),
+      created_at: normalizeDate(data.created_at) ?? new Date(0).toISOString(),
+    };
+  }
+
+  return row;
+}
 
 function setRememberUntil(rememberForWeek?: boolean) {
   if (typeof window === "undefined") return;
@@ -196,6 +254,7 @@ function createBuilder(table: string) {
     }
 
     if (mode === "update" || mode === "delete") {
+      try {
       const idFilter = filters.find((filter) => filter.field === "id" && filter.op === "==");
 
       if (idFilter) {
@@ -223,28 +282,33 @@ function createBuilder(table: string) {
       }
 
       return { data: null };
+      } catch (error) {
+        return { data: null, error };
+      }
     }
 
     const idFilter = filters.find((filter) => filter.field === "id" && filter.op === "==");
     if (idFilter) {
       const snap = await getDoc(doc(db, table, idFilter.value));
-      const data = snap.exists() ? [{ id: snap.id, ...(snap.data() as any) }] : [];
+      const data = snap.exists() ? [normalizeRow(table, snap.id, snap.data() as any)] : [];
       if (single) return { data: data[0] ?? null };
       return { data };
     }
 
-    const clauses = [
-      ...buildWhereClauses(),
-      ...orders.map((order) => firebaseOrderBy(order.field, order.dir)),
-    ];
-    if (limitNum) clauses.push(firebaseLimit(limitNum));
+    try {
+      const clauses = buildWhereClauses();
+      const queryRef = clauses.length ? firebaseQuery(colRef, ...clauses) : firebaseQuery(colRef);
+      const snap = await getDocs(queryRef as any);
+      let data = snap.docs.map((item) => normalizeRow(table, item.id, item.data() as any));
 
-    const queryRef = clauses.length ? firebaseQuery(colRef, ...clauses) : firebaseQuery(colRef);
-    const snap = await getDocs(queryRef as any);
-    const data = snap.docs.map((item) => ({ id: item.id, ...(item.data() as any) }));
+      data = applyClientOrdering(data);
+      if (limitNum) data = data.slice(0, limitNum);
 
-    if (single) return { data: data[0] ?? null };
-    return { data };
+      if (single) return { data: data[0] ?? null };
+      return { data };
+    } catch (error) {
+      return { data: single ? null : [], error };
+    }
   }
 
   function buildWhereClauses() {
@@ -254,6 +318,30 @@ function createBuilder(table: string) {
       if (filter.op === "not_null") clauses.push(firebaseWhere(filter.field, "!=", null));
     }
     return clauses;
+  }
+
+  function applyClientOrdering(rows: any[]) {
+    if (!orders.length) return rows;
+
+    return [...rows].sort((a, b) => {
+      for (const order of orders) {
+        const left = a[order.field];
+        const right = b[order.field];
+        const direction = order.dir === "asc" ? 1 : -1;
+
+        if (left == null && right == null) continue;
+        if (left == null) return 1;
+        if (right == null) return -1;
+
+        const result =
+          typeof left === "number" && typeof right === "number"
+            ? left - right
+            : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+
+        if (result !== 0) return result * direction;
+      }
+      return 0;
+    });
   }
 
   return api;

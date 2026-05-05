@@ -34,9 +34,9 @@ export function TenantShell() {
     return (
       <div className="min-h-screen grid place-items-center bg-background p-4">
         <div className="w-full max-w-md tile p-8 text-center">
-          <div className="font-black text-2xl">Waiting for unit assignment</div>
+          <div className="font-black text-2xl">Waiting for your unit invite</div>
           <p className="text-sm text-muted-foreground mt-3">
-            Your tenant account is active. The owner or assistant needs to attach you to a unit before the tenant app opens.
+            Your tenant account is active. The owner or assistant needs to invite you to a unit before the tenant app opens.
           </p>
           <div className="mt-6 flex gap-2">
             <button onClick={() => window.location.reload()} className="flex-1 rounded-2xl bg-muted px-4 py-3 text-sm font-bold">

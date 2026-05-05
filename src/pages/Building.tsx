@@ -29,11 +29,28 @@ export function Building() {
       firebaseClient.from("units").select("*").order("floor").order("number"),
       firebaseClient.from("profiles").select("*").not("unit_id", "is", null),
     ]);
+    if (u.error) toast.error(u.error.message ?? "Could not load units");
+    if (t.error) toast.error(t.error.message ?? "Could not load assigned tenants");
     setUnits((u.data as Unit[]) ?? []);
     setTenants((t.data as Profile[]) ?? []);
   };
 
   useEffect(() => { load(); }, []);
+
+  const floorOptions = useMemo(() => {
+    const labels = new Map(FLOORS.map((item) => [item.value, item.label]));
+    for (const unit of units) labels.set(unit.floor, labels.get(unit.floor) ?? floorLabel(unit.floor));
+    return [...labels.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.value - b.value);
+  }, [units]);
+
+  useEffect(() => {
+    if (!units.length) return;
+    if (!units.some((unit) => unit.floor === floor)) {
+      setFloor([...new Set(units.map((unit) => unit.floor))].sort((a, b) => a - b)[0]);
+    }
+  }, [floor, units]);
 
   const list = useMemo(() => units.filter(u => u.floor === floor), [units, floor]);
 
@@ -71,7 +88,7 @@ export function Building() {
 
   const exportUnits = () => {
     exportToCSV(units.map(u => ({
-      number: u.number, floor: u.floor === 0 ? "Ground" : "First",
+      number: u.number, floor: floorLabel(u.floor),
       bedrooms: u.bedrooms, rent_ksh: u.rent, status: u.status,
       tenant: tenants.find(t => t.unit_id === u.id)?.full_name ?? "",
     })), "units.csv");
@@ -96,7 +113,7 @@ export function Building() {
 
       <LayoutGroup id="floor-tabs">
         <div className="tile p-2 inline-flex gap-1 self-start">
-          {FLOORS.map(f => {
+          {floorOptions.map(f => {
             const active = f.value === floor;
             const count = units.filter(u => u.floor === f.value).length;
             return (
@@ -161,7 +178,7 @@ export function Building() {
           <Field label="Unit number"><input className={inputCls} value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="e.g. G01 or 101" required /></Field>
           <Field label="Floor">
             <select className={inputCls} value={form.floor} onChange={e => setForm({ ...form, floor: Number(e.target.value) })}>
-              {FLOORS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+              {floorOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
             </select>
           </Field>
           <Field label="Type">

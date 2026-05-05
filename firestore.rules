@@ -52,10 +52,16 @@ service cloud.firestore {
       // Documents contain role metadata only; keep email/phone data in profiles.
       allow list: if true;
       allow get: if isOwnerTeam() || ownsProfile(userId);
-      allow create: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.user_id == userId
-        && request.resource.data.role in ["owner", "assistant", "tenant"];
+      allow create: if (
+          isOwnerTeam()
+          && request.resource.data.role in ["owner", "assistant", "tenant"]
+        )
+        || (
+          signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.user_id == userId
+          && request.resource.data.role in ["owner", "assistant", "tenant"]
+        );
       allow update, delete: if isOwnerTeam();
     }
 

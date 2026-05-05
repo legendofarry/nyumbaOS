@@ -23,8 +23,11 @@ export function Tenants() {
       firebaseClient.from("units").select("*").order("floor").order("number"),
     ]);
 
-    const tenantIds = new Set(((roles.data as any[]) ?? []).map((role) => role.user_id));
-    const tenantProfiles = ((profiles.data as Profile[]) ?? []).filter((profile) => tenantIds.has(profile.id));
+    const roleRows = (roles.data as any[]) ?? [];
+    const tenantIds = new Set(roleRows.map((role) => role.user_id));
+    const tenantProfiles = ((profiles.data as Profile[]) ?? []).filter((profile) => (
+      tenantIds.has(profile.id) || Boolean(profile.login_email)
+    ));
 
     setTenants(tenantProfiles.filter((profile) => Boolean(profile.unit_id)));
     setUnassignedTenants(tenantProfiles.filter((profile) => !profile.unit_id));
@@ -34,7 +37,7 @@ export function Tenants() {
   useEffect(() => { load(); }, []);
 
   const occupiedUnitIds = new Set(tenants.map((tenant) => tenant.unit_id).filter(Boolean));
-  const availableUnits = units.filter((unit) => !occupiedUnitIds.has(unit.id));
+  const availableUnits = units.filter((unit) => !occupiedUnitIds.has(unit.id) && unit.status !== "Occupied");
 
   const assignTenant = async (tenant: Profile) => {
     const unitId = selectedUnits[tenant.id];
@@ -76,9 +79,15 @@ export function Tenants() {
       return;
     }
 
+    await firebaseClient.from("user_roles").insert({
+      id: tenant.id,
+      user_id: tenant.id,
+      role: "tenant",
+      created_at: now,
+    });
     await firebaseClient.from("units").update({ status: "Occupied" }).eq("id", unitId);
     setBusyId(null);
-    toast.success("Tenant assigned to unit");
+    toast.success("Tenant invited to the unit");
     load();
   };
 
@@ -125,7 +134,10 @@ export function Tenants() {
 
       {unassignedTenants.length > 0 && (
         <div className="tile p-5">
-          <h3 className="font-black mb-3 text-sm uppercase tracking-widest text-muted-foreground">Waiting for unit assignment</h3>
+          <h3 className="font-black text-sm uppercase tracking-widest text-muted-foreground">Waiting for invitation</h3>
+          <p className="mt-2 mb-4 text-sm text-muted-foreground">
+            These tenants already registered. Choose a vacant unit and invite them by attaching that unit to their account.
+          </p>
           <div className="space-y-2">
             {unassignedTenants.map((tenant) => (
               <div key={tenant.id} className="grid gap-3 bg-muted rounded-2xl p-3 md:grid-cols-[1fr_220px_auto] md:items-center">
@@ -151,7 +163,7 @@ export function Tenants() {
                   className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-foreground text-background text-xs font-bold disabled:opacity-50"
                 >
                   {busyId === tenant.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                  Assign
+                  Invite
                 </button>
               </div>
             ))}
@@ -189,7 +201,7 @@ export function Tenants() {
         {!tenants.length && !unassignedTenants.length && (
           <div className="col-span-full tile p-10 text-center">
             <TicketIcon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No tenants yet. Tenant signups will appear here for unit assignment.</p>
+            <p className="text-sm text-muted-foreground">No tenants yet. Tenant signups will appear here so you can invite them to a unit.</p>
           </div>
         )}
       </div>

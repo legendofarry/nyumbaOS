@@ -7,31 +7,45 @@ import { KSH } from "@/lib/format";
 import { AiAssistant } from "@/components/AiAssistant";
 import { streamAi } from "@/lib/ai";
 import type { Unit, Profile, Payment, Ticket, Reading, Notice } from "@/lib/types";
+import { toast } from "sonner";
 
 export function Dashboard() {
   const [data, setData] = useState<{
     units: Unit[]; tenants: Profile[]; payments: Payment[]; tickets: Ticket[]; readings: Reading[]; notices: Notice[];
   } | null>(null);
+  const [error, setError] = useState("");
   const [insights, setInsights] = useState("");
 
   useEffect(() => {
     const load = async () => {
-      const [u, t, p, ti, r, n] = await Promise.all([
-        firebaseClient.from("units").select("*").order("floor").order("number"),
-        firebaseClient.from("profiles").select("*").not("unit_id", "is", null),
-        firebaseClient.from("payments").select("*").order("date", { ascending: false }),
-        firebaseClient.from("tickets").select("*").order("created_at", { ascending: false }),
-        firebaseClient.from("readings").select("*").order("date", { ascending: false }),
-        firebaseClient.from("notices").select("*").order("created_at", { ascending: false }).limit(3),
-      ]);
-      setData({
-        units: (u.data as Unit[]) ?? [],
-        tenants: (t.data as Profile[]) ?? [],
-        payments: (p.data as Payment[]) ?? [],
-        tickets: (ti.data as Ticket[]) ?? [],
-        readings: (r.data as Reading[]) ?? [],
-        notices: (n.data as Notice[]) ?? [],
-      });
+      setError("");
+      try {
+        const [u, roles, profiles, p, ti, r, n] = await Promise.all([
+          firebaseClient.from("units").select("*").order("floor").order("number"),
+          firebaseClient.from("user_roles").select("*").eq("role", "tenant"),
+          firebaseClient.from("profiles").select("*"),
+          firebaseClient.from("payments").select("*").order("date", { ascending: false }),
+          firebaseClient.from("tickets").select("*").order("created_at", { ascending: false }),
+          firebaseClient.from("readings").select("*").order("date", { ascending: false }),
+          firebaseClient.from("notices").select("*").order("created_at", { ascending: false }).limit(3),
+        ]);
+
+        const tenantIds = new Set(((roles.data as any[]) ?? []).map((role) => role.user_id));
+        const tenants = ((profiles.data as Profile[]) ?? []).filter((profile) => tenantIds.has(profile.id) && profile.unit_id);
+
+        setData({
+          units: (u.data as Unit[]) ?? [],
+          tenants,
+          payments: (p.data as Payment[]) ?? [],
+          tickets: (ti.data as Ticket[]) ?? [],
+          readings: (r.data as Reading[]) ?? [],
+          notices: (n.data as Notice[]) ?? [],
+        });
+      } catch (err: any) {
+        const message = err?.message ?? "Could not load dashboard data.";
+        setError(message);
+        toast.error(message);
+      }
     };
     load();
   }, []);
@@ -57,6 +71,17 @@ export function Dashboard() {
       onDelta: (c) => { acc += c; setInsights(acc); },
     });
   }, [data]);
+
+  if (error) {
+    return (
+      <div className="tile p-8">
+        <div className="flex items-center gap-2 font-black text-destructive">
+          <AlertCircle className="h-5 w-5" /> Dashboard could not load
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
 
   if (!data) return <div className="grid place-items-center py-20"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 

@@ -25,13 +25,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadExtras = async (uid: string) => {
-    const [{ data: roles }, { data: prof }] = await Promise.all([
-      firebaseClient.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
-      firebaseClient.from("profiles").select("*").eq("id", uid).maybeSingle(),
-    ]);
-    setRole((roles?.role as Role) ?? null);
-    setProfile((prof as Profile) ?? null);
+  const loadExtras = async (uid: string, retries = 8) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const [{ data: roles }, { data: prof }] = await Promise.all([
+        firebaseClient.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
+        firebaseClient.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      ]);
+      const nextRole = (roles?.role as Role) ?? null;
+      const nextProfile = (prof as Profile) ?? null;
+
+      if (nextRole && nextProfile) {
+        setRole(nextRole);
+        setProfile(nextProfile);
+        return;
+      }
+
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      } else {
+        setRole(nextRole);
+        setProfile(nextProfile);
+      }
+    }
   };
 
   useEffect(() => {
@@ -61,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = async () => {
-    if (session?.user) await loadExtras(session.user.id);
+    if (session?.user) await loadExtras(session.user.id, 0);
   };
 
   const signOut = async () => {
