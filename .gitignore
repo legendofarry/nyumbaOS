@@ -17,6 +17,11 @@ dist-ssr
 .netlify
 *.local
 
+.env
+.env.local
+.env.*
+!.env.example
+
 # Local deployment tooling
 .wrangler/
 .dev.vars
