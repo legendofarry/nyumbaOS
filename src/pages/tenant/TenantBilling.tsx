@@ -26,7 +26,7 @@ export function TenantBilling() {
 
   if (loading) return <div className="grid place-items-center py-20"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
-  const balance = unit ? computeBalance(Number(unit.rent), payments, profile?.created_at) : 0;
+  const balance = unit ? computeBalance(Number(unit.rent), payments, profile?.lease_start ?? profile?.created_at) : 0;
 
   return (
     <div className="flex flex-col gap-6">

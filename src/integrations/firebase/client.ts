@@ -100,6 +100,8 @@ function normalizeRow(table: string, id: string, data: any) {
     updated_at: normalizeDate(data.updated_at),
     date: normalizeDate(data.date),
     expires_at: normalizeDate(data.expires_at),
+    lease_start: normalizeDate(data.lease_start),
+    lease_end: normalizeDate(data.lease_end),
   };
 
   if (table === "units") {

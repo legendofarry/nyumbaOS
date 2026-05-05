@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { CheckCircle2, Download, Loader2, Phone, Ticket as TicketIcon, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Loader2, Phone, Ticket as TicketIcon, Trash2, UserMinus } from "lucide-react";
 import { firebaseClient } from "@/integrations/firebase/client";
-import { inputCls, Modal } from "@/components/Modal";
+import { inputCls, Modal, Field, PrimaryBtn } from "@/components/Modal";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
-import type { Unit, Profile, Payment, Ticket } from "@/lib/types";
+import type { Unit, Profile, Payment, Ticket, PaymentType } from "@/lib/types";
 import { exportToCSV } from "@/lib/csv";
 import { computeBalance } from "@/lib/balance";
 import { fmtDate, KSH } from "@/lib/format";
@@ -20,6 +20,11 @@ export function Tenants() {
   const [selectedUnits, setSelectedUnits] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const confirm = useConfirm();
+  const [postInviteModal, setPostInviteModal] = useState<{ tenant: Profile; unit: Unit; amountDue: number } | null>(null);
+  const [chargeAmount, setChargeAmount] = useState("");
+  const [chargeType, setChargeType] = useState<PaymentType>("Other");
+  const [chargeNote, setChargeNote] = useState("");
+  const [charges, setCharges] = useState<Array<{ amount: number; type: PaymentType; note?: string }>>([]);
 
   const load = async () => {
     const [roles, profiles, unitList, paymentList, ticketList] = await Promise.all([
@@ -41,6 +46,38 @@ export function Tenants() {
     setUnits((unitList.data as Unit[]) ?? []);
     setPayments((paymentList.data as Payment[]) ?? []);
     setTickets((ticketList.data as Ticket[]) ?? []);
+  };
+
+  const addCharge = () => {
+    const amt = Number(chargeAmount);
+    if (!amt || Number.isNaN(amt)) { toast.error("Enter a valid amount"); return; }
+    setCharges((c) => [...c, { amount: Math.abs(amt), type: chargeType, note: chargeNote || undefined }]);
+    setChargeAmount("");
+    setChargeNote("");
+  };
+
+  const removeCharge = (idx: number) => {
+    setCharges((c) => c.filter((_, i) => i !== idx));
+  };
+
+  const saveCharges = async () => {
+    if (!postInviteModal) return;
+    if (!charges.length) { setPostInviteModal(null); load(); return; }
+    setBusyId(postInviteModal.tenant.id);
+    for (const ch of charges) {
+      const { error } = await firebaseClient.from("payments").insert({
+        tenant_id: postInviteModal.tenant.id,
+        amount: -Math.abs(ch.amount),
+        type: ch.type,
+        note: ch.note ?? null,
+      });
+      if (error) { toast.error(error.message ?? "Could not save charge"); setBusyId(null); return; }
+    }
+    setBusyId(null);
+    toast.success("Charges added");
+    setCharges([]);
+    setPostInviteModal(null);
+    load();
   };
 
   useEffect(() => { load(); }, []);
@@ -65,6 +102,7 @@ export function Tenants() {
 
     const profileUpdate = await firebaseClient.from("profiles").update({
       unit_id: unitId,
+      lease_start: now,
       updated_at: now,
     }).eq("id", tenant.id);
 
@@ -96,7 +134,79 @@ export function Tenants() {
     });
     await firebaseClient.from("units").update({ status: "Occupied" }).eq("id", unitId);
     setBusyId(null);
+
+    // Compute initial amount due for this new lease (tenant just linked)
+    const unitObj = units.find((u) => u.id === unitId) as Unit | undefined;
+    const tenantPayments = payments.filter((p) => p.tenant_id === tenant.id);
+    const leaseStart = now;
+    const balance = unitObj ? computeBalance(Number(unitObj.rent), tenantPayments, leaseStart) : 0;
+    const amountDue = balance < 0 ? Math.abs(balance) : 0;
+
+    // Show post-invite modal to optionally add other charges
+    setPostInviteModal({ tenant: { ...tenant, lease_start: leaseStart }, unit: unitObj as Unit, amountDue });
     toast.success("Tenant invited to the unit");
+  };
+
+  const unlinkTenant = async (tenant: Profile) => {
+    if (!(await confirm({ title: `End lease for ${tenant.full_name}?`, description: "This will unlink the tenant from their unit and record lease end.", destructive: true, confirmText: "End lease" }))) return;
+    if (!tenant.unit_id) { toast.error("Tenant is not assigned to a unit"); return; }
+    setBusyId(tenant.id);
+    const now = new Date().toISOString();
+
+    // fetch fresh profile to get lease_history
+    const profRes = await firebaseClient.from("profiles").select("*").eq("id", tenant.id).maybeSingle();
+    const prof = profRes.data ?? {};
+    const prevLeaseStart = prof.lease_start ?? prof.created_at ?? tenant.created_at;
+    const history = Array.isArray(prof.lease_history) ? prof.lease_history.slice() : [];
+    history.push({ unit_id: tenant.unit_id, start: prevLeaseStart, end: now });
+
+    await firebaseClient.from("units").update({ status: "Vacant" }).eq("id", tenant.unit_id);
+    await firebaseClient.from("tenant_logins").delete().eq("id", tenant.unit_id);
+    await firebaseClient.from("profiles").update({ unit_id: null, lease_end: now, updated_at: now, lease_history: history }).eq("id", tenant.id);
+
+    setBusyId(null);
+    toast.success("Lease ended and tenant unlinked");
+    load();
+  };
+
+  const transferTenant = async (tenant: Profile, targetUnitId?: string) => {
+    const unitId = targetUnitId ?? selectedUnits[tenant.id];
+    if (!unitId) { toast.error("Select a target unit first"); return; }
+    if (unitId === tenant.unit_id) { toast.error("Already assigned to that unit"); return; }
+    if (!(await confirm({ title: `Transfer ${tenant.full_name}?`, description: `Move tenant to unit ${units.find(u => u.id === unitId)?.number}.`, confirmText: "Transfer" }))) return;
+
+    setBusyId(tenant.id);
+    const now = new Date().toISOString();
+
+    // fetch fresh profile
+    const profRes = await firebaseClient.from("profiles").select("*").eq("id", tenant.id).maybeSingle();
+    const prof = profRes.data ?? {};
+    const prevLeaseStart = prof.lease_start ?? prof.created_at ?? tenant.created_at;
+    const history = Array.isArray(prof.lease_history) ? prof.lease_history.slice() : [];
+    if (tenant.unit_id) history.push({ unit_id: tenant.unit_id, start: prevLeaseStart, end: now });
+
+    const profileUpdate = await firebaseClient.from("profiles").update({ unit_id: unitId, lease_start: now, updated_at: now, lease_history: history }).eq("id", tenant.id);
+    if (profileUpdate.error) { setBusyId(null); toast.error(profileUpdate.error.message ?? "Could not transfer tenant"); return; }
+
+    // update units and tenant login
+    if (tenant.unit_id) {
+      await firebaseClient.from("units").update({ status: "Vacant" }).eq("id", tenant.unit_id);
+      await firebaseClient.from("tenant_logins").delete().eq("id", tenant.unit_id);
+    }
+    const nowLogin = await firebaseClient.from("tenant_logins").insert({ id: unitId, unit_id: unitId, user_id: tenant.id, login_email: tenant.login_email ?? "", created_at: now });
+    if (nowLogin.error) { /* best-effort continue */ }
+    await firebaseClient.from("units").update({ status: "Occupied" }).eq("id", unitId);
+
+    setBusyId(null);
+
+    // compute amount due for new lease
+    const unitObj = units.find(u => u.id === unitId) as Unit | undefined;
+    const tenantPayments = payments.filter((p) => p.tenant_id === tenant.id);
+    const leaseStart = now;
+    const balance = unitObj ? computeBalance(Number(unitObj.rent), tenantPayments, leaseStart) : 0;
+    const amountDue = balance < 0 ? Math.abs(balance) : 0;
+    setPostInviteModal({ tenant: { ...tenant, lease_start: leaseStart }, unit: unitObj as Unit, amountDue });
+    toast.success("Tenant transferred");
     load();
   };
 
@@ -132,7 +242,8 @@ export function Tenants() {
   const tenantStatus = (tenant: Profile) => {
     const unit = units.find((item) => item.id === tenant.unit_id);
     const tenantPayments = payments.filter((payment) => payment.tenant_id === tenant.id);
-    const balance = unit ? computeBalance(Number(unit.rent), tenantPayments, tenant.created_at) : 0;
+    const leaseStart = (tenant as any).lease_start ?? tenant.created_at;
+    const balance = unit ? computeBalance(Number(unit.rent), tenantPayments, leaseStart) : 0;
     const openTickets = tickets.filter((ticket) => ticket.unit_id === tenant.unit_id && ticket.status !== "Done");
     const vacatingOn = (tenant as any).vacating_on || (tenant as any).move_out_date || null;
 
@@ -199,9 +310,16 @@ export function Tenants() {
                 <button onClick={() => setSelectedTenant(tenant)} className="h-12 w-12 rounded-2xl bg-foreground text-background grid place-items-center text-lg font-black">
                   {tenant.full_name.charAt(0).toUpperCase()}
                 </button>
-                <button onClick={() => handleDeleteTenant(tenant)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  {busyId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 hover:text-destructive" />}
-                </button>
+                <div className="flex items-center gap-2">
+                  {tenant.unit_id && (
+                    <button onClick={() => unlinkTenant(tenant)} title="Unlink (end lease)" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      {busyId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserMinus className="h-4 w-4 hover:text-warning" />}
+                    </button>
+                  )}
+                  <button onClick={() => handleDeleteTenant(tenant)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    {busyId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 hover:text-destructive" />}
+                  </button>
+                </div>
               </div>
               <div className="mt-4">
                 <button onClick={() => setSelectedTenant(tenant)} className="font-black text-base text-left hover:underline">{tenant.full_name}</button>
@@ -244,6 +362,54 @@ export function Tenants() {
           </div>
         )}
       </div>
+
+      <Modal open={!!postInviteModal} onClose={() => { setPostInviteModal(null); load(); }} title={postInviteModal ? "New tenant linked — Add charges?" : "New tenant linked"}>
+        {postInviteModal && (
+          <div className="flex flex-col gap-4">
+            <div className="text-sm">Tenant invited to unit {postInviteModal.unit.number}. Calculated amount due: {KSH(postInviteModal.amountDue)}</div>
+            <div className="grid gap-3">
+              <Field label="Charge amount (KSH)"><input className={inputCls} value={chargeAmount} onChange={e => setChargeAmount(e.target.value)} placeholder="e.g. 5000" /></Field>
+              <Field label="Type">
+                <select className={inputCls} value={chargeType} onChange={e => setChargeType(e.target.value as PaymentType)}>
+                  <option>Rent</option>
+                  <option>Deposit</option>
+                  <option>Water</option>
+                  <option>Electricity</option>
+                  <option>Garbage</option>
+                  <option>Security</option>
+                  <option>Service</option>
+                  <option>Other</option>
+                </select>
+              </Field>
+              <Field label="Note"><input className={inputCls} value={chargeNote} onChange={e => setChargeNote(e.target.value)} /></Field>
+
+              <div className="flex gap-2">
+                <button type="button" onClick={addCharge} className="px-4 py-2 rounded-2xl bg-foreground text-background font-bold text-sm">Add charge</button>
+                <button type="button" onClick={saveCharges} disabled={busyId === postInviteModal.tenant.id} className="px-4 py-2 rounded-2xl bg-foreground/80 text-background font-bold text-sm">Save charges</button>
+                <button type="button" onClick={() => { setPostInviteModal(null); load(); }} className="px-4 py-2 rounded-2xl bg-muted text-sm">Done</button>
+              </div>
+
+              {charges.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {charges.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-2xl bg-muted p-3">
+                      <div>
+                        <div className="font-bold text-sm">{c.type}</div>
+                        <div className="text-xs text-muted-foreground">{c.note ?? ""}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-mono font-black">{KSH(c.amount)}</div>
+                        <button onClick={() => removeCharge(i)} className="text-xs text-destructive">Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      </Modal>
 
       <Modal open={!!selectedTenant} onClose={() => setSelectedTenant(null)} title={selectedTenant?.full_name ?? "Tenant"}>
         {selectedTenant && (() => {
@@ -298,6 +464,22 @@ export function Tenants() {
                   )}
                 </div>
               </div>
+
+              {status.unit && selectedTenant && (
+                <div>
+                  <div className="mb-2 text-xs font-black uppercase tracking-widest text-muted-foreground">Transfer / Unlink</div>
+                  <div className="flex items-center gap-2">
+                    <select className={inputCls} value={selectedUnits[selectedTenant.id] ?? ""} onChange={e => setSelectedUnits({ ...selectedUnits, [selectedTenant.id]: e.target.value })}>
+                      <option value="">Select target unit...</option>
+                      {availableUnits.map((u) => (
+                        <option key={u.id} value={u.id}>Unit {u.number} - {u.bedrooms}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => transferTenant(selectedTenant, selectedUnits[selectedTenant.id])} disabled={!selectedUnits[selectedTenant.id] || busyId === selectedTenant.id} className="px-4 py-2 rounded-2xl bg-foreground text-background font-bold text-sm">Transfer</button>
+                    <button onClick={() => unlinkTenant(selectedTenant)} disabled={busyId === selectedTenant.id} className="px-3 py-2 rounded-2xl bg-muted text-sm">Unlink</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}

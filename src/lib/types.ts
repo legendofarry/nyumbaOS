@@ -22,6 +22,9 @@ export interface Profile {
   phone: string | null;
   unit_id: string | null;
   login_email?: string | null;
+  lease_start?: string | null;
+  lease_end?: string | null;
+  lease_history?: Array<{ unit_id: string; start?: string | null; end?: string | null }>;
   created_at: string;
 }
 
