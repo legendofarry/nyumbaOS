@@ -294,15 +294,17 @@ export function HomeAuth({ initialFlow = "login" }: { initialFlow?: Flow }) {
               {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : flow === "login" ? "Login" : "Create account"}
             </PrimaryBtn>
 
-            <button
-              type="button"
-              onClick={() => setActor(actor === "tenant" ? "management" : "tenant")}
-              className="text-sm font-bold text-muted-foreground hover:text-foreground"
-            >
-              {actor === "tenant"
-                ? flow === "login" ? "Sign in as management" : allManagementAccountsExist ? "Sign in as management" : "Create management account"
-                : flow === "login" ? "Back to tenant login" : "Back to tenant signup"}
-            </button>
+            {!(actor === "tenant" && flow === "signup" && allManagementAccountsExist) && (
+              <button
+                type="button"
+                onClick={() => setActor(actor === "tenant" ? "management" : "tenant")}
+                className="text-sm font-bold text-muted-foreground hover:text-foreground"
+              >
+                {actor === "tenant"
+                  ? flow === "login" ? "Sign in as management" : allManagementAccountsExist ? "Sign in as management" : "Create management account"
+                  : flow === "login" ? "Back to tenant login" : "Back to tenant signup"}
+              </button>
+            )}
           </motion.form>
         </AnimatePresence>
       </motion.div>
