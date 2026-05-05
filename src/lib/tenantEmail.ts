@@ -1,3 +1,4 @@
+// src\lib\tenantEmail.ts
 // Firebase Auth still needs email-shaped identifiers.
 // Tenants never see or type these; the app derives them from a unit ID or phone.
 export const tenantEmail = (unitId: string) =>

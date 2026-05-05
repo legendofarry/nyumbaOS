@@ -1,9 +1,10 @@
+// src\lib\ai.ts
 import { toast } from "sonner";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const AI_URL = import.meta.env.VITE_AI_URL ?? OPENROUTER_URL;
 const OPENROUTER_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = import.meta.env.VITE_OPENROUTER_MODEL ?? "openrouter/auto";
+const OPENROUTER_MODEL = import.meta.env.VITE_OPENROUTER_MODEL;
 
 export type AiMode = "owner-chat" | "tenant-chat" | "draft-notice" | "insights";
 
