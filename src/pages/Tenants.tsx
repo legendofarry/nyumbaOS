@@ -100,6 +100,14 @@ export function Tenants() {
     setBusyId(tenant.id);
     const now = new Date().toISOString();
 
+    // duplication check: ensure no other tenant_login exists for this unit
+    const { data: existingLogin } = await firebaseClient.from("tenant_logins").select("*").eq("id", unitId).maybeSingle();
+    if (existingLogin && (existingLogin as any).user_id !== tenant.id) {
+      setBusyId(null);
+      toast.error("This unit already has a tenant login");
+      return;
+    }
+
     const profileUpdate = await firebaseClient.from("profiles").update({
       unit_id: unitId,
       lease_start: now,
@@ -192,6 +200,13 @@ export function Tenants() {
     if (tenant.unit_id) {
       await firebaseClient.from("units").update({ status: "Vacant" }).eq("id", tenant.unit_id);
       await firebaseClient.from("tenant_logins").delete().eq("id", tenant.unit_id);
+    }
+    // duplication check before creating new tenant_login
+    const { data: existing } = await firebaseClient.from("tenant_logins").select("*").eq("id", unitId).maybeSingle();
+    if (existing && (existing as any).user_id !== tenant.id) {
+      setBusyId(null);
+      toast.error("This unit already has a tenant login");
+      return;
     }
     const nowLogin = await firebaseClient.from("tenant_logins").insert({ id: unitId, unit_id: unitId, user_id: tenant.id, login_email: tenant.login_email ?? "", created_at: now });
     if (nowLogin.error) { /* best-effort continue */ }

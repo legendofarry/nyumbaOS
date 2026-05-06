@@ -4,6 +4,7 @@ import { Home, Wallet, Wrench, Megaphone, Droplets, LogOut, Loader2 } from "luci
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 const nav = [
   { to: "/tenant", label: "Home", icon: Home },
@@ -32,6 +33,88 @@ export function TenantShell() {
     if (role === "owner" || role === "assistant") { navigate({ to: "/" }); return; }
     if (role !== "tenant") { navigate({ to: "/" }); return; }
   }, [loading, user, role, navigate]);
+
+  const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  };
+
+  const registerBiometric = async (email: string, password: string) => {
+    try {
+      if (!window.PublicKeyCredential) { toast.error("Biometric authentication not supported on this device."); return; }
+      const uid = user?.id ?? String(Math.random()).slice(2);
+      const userId = new TextEncoder().encode(uid);
+      const publicKey: any = {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: "NyumbaOS" },
+        user: { id: userId, name: email, displayName: profile?.full_name ?? "" },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+        timeout: 60000,
+        attestation: "none",
+      };
+
+      const cred: any = await (navigator.credentials as any).create({ publicKey });
+      if (!cred) throw new Error("Could not create biometric credential");
+      const rawId = cred.rawId as ArrayBuffer;
+      const b64 = arrayBufferToBase64(rawId);
+      localStorage.setItem(`nyumbaos:bio:credId:${email}`, b64);
+      localStorage.setItem(`nyumbaos:bio:pw:${email}`, password);
+      toast.success("Fingerprint enabled for faster login");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not enable fingerprint");
+    }
+  };
+
+  useEffect(() => {
+    if (loading || !user || role !== "tenant") return;
+
+    const email = (profile as any)?.login_email ?? (user as any)?.email;
+    if (!email) return;
+
+    const raw = localStorage.getItem("nyumbaos:bio:pending");
+    if (raw) {
+      let pending: any = null;
+      try { pending = JSON.parse(raw); } catch { localStorage.removeItem("nyumbaos:bio:pending"); return; }
+      if (!pending?.email || !pending?.password) { localStorage.removeItem("nyumbaos:bio:pending"); return; }
+
+      (async () => {
+        const already = localStorage.getItem(`nyumbaos:bio:credId:${pending.email}`);
+        if (already) { localStorage.removeItem("nyumbaos:bio:pending"); return; }
+        const ok = await confirm({ title: "Enable fingerprint?", description: "Scan your fingerprint now to enable faster login next time.", confirmText: "Enable", cancelText: "Skip" });
+        if (!ok) { localStorage.removeItem("nyumbaos:bio:pending"); return; }
+        await registerBiometric(pending.email, pending.password);
+        localStorage.removeItem("nyumbaos:bio:pending");
+      })();
+      return;
+    }
+
+    // No pending registration: suggest enabling biometrics if none exists yet (one-time prompt)
+    const credKey = `nyumbaos:bio:credId:${email}`;
+    const promptedKey = `nyumbaos:bio:prompted:${email}`;
+    const already = localStorage.getItem(credKey);
+    if (already) return;
+    if (localStorage.getItem(promptedKey)) return;
+
+    (async () => {
+      const ok = await confirm({ title: "Enable fingerprint?", description: "Enable fingerprint for faster login. You may be asked to enter your password to complete setup.", confirmText: "Enable", cancelText: "Later" });
+      // record that we've prompted so we don't nag repeatedly
+      try { localStorage.setItem(promptedKey, "1"); } catch {}
+      if (!ok) return;
+
+      // try to reuse stored password if available, otherwise ask user to re-enter
+      let pw = localStorage.getItem(`nyumbaos:bio:pw:${email}`);
+      if (!pw) {
+        try {
+          pw = window.prompt("Enter your account password to enable biometric sign-in (stored locally only):") || undefined;
+        } catch {}
+      }
+      if (!pw) { toast.error("Password required to enable biometric sign-in"); return; }
+      await registerBiometric(email, pw);
+    })();
+  }, [loading, user, role, confirm, profile]);
 
   if (loading || !user || role !== "tenant") {
     return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
