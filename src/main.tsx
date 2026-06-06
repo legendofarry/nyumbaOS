@@ -14,3 +14,28 @@ root.render(
     <RouterProvider router={router} />
   </StrictMode>,
 );
+
+// Register service worker in production builds
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  if (import.meta.env.PROD) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("Service worker registered:", registration);
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            newWorker?.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                // New content is available; you can notify the user here.
+                console.log("New content available; please refresh.");
+              }
+            });
+          });
+        })
+        .catch((err) => {
+          console.warn("Service worker registration failed:", err);
+        });
+    });
+  }
+}

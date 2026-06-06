@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Blobs } from "./Blobs";
+import { PwaInstallPromo } from "./PwaInstallPromo";
 import type { Profile } from "@/lib/use-profile";
 
 function NavItem({ to, label, icon: Icon, active }: { to: string; label: string; icon: LucideIcon; active: boolean }) {
@@ -46,6 +47,9 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
     <div className="min-h-[100dvh] flex flex-col items-center">
       <Blobs />
       <div className="w-full max-w-md flex-1 flex flex-col pb-[88px]">
+        <div className="px-5 mt-4">
+          <PwaInstallPromo />
+        </div>
         {children}
       </div>
       <div className="fixed bottom-3 inset-x-0 z-40 flex justify-center px-3 pointer-events-none">

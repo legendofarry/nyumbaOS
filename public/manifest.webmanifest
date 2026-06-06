@@ -1,0 +1,21 @@
+{
+  "name": "Apartment",
+  "short_name": "Apartment",
+  "description": "Firebase-first apartment management that feels like a native Android app when installed.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
+  "theme_color": "#0f2f2b",
+  "background_color": "#091513",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
