@@ -7,15 +7,14 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-let serverEntryPromise: Promise<ServerEntry> | undefined;
-
+// Server entry is not used in a static Netlify build. Provide a placeholder
+// that surface a clear error if invoked in an environment expecting SSR.
 async function getServerEntry(): Promise<ServerEntry> {
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => (m.default ?? m) as ServerEntry,
-    );
-  }
-  return serverEntryPromise;
+  return {
+    fetch: async () => {
+      throw new Error('Server entry unavailable in static frontend build.');
+    },
+  };
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body

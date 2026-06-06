@@ -10,8 +10,7 @@ import { PhysicsInput } from "@/components/PhysicsInput";
 import { PhysicsSelect } from "@/components/PhysicsSelect";
 import { PhysicsSheet } from "@/components/PhysicsSheet";
 import { PhysicsTextarea } from "@/components/PhysicsTextarea";
-import { useServerFn } from "@tanstack/react-start";
-import { createTenant } from "@/lib/apt.functions";
+import { createTenantClient } from "@/lib/serverFns";
 import { Plus, ChevronRight, Copy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -89,7 +88,7 @@ function AddTenantForm({ units, onCreated }: { units: any[]; onCreated: (code: s
   const [initial, setInitial] = useState<string>("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const create = useServerFn(createTenant);
+  const create = (opts: any) => createTenantClient(opts.data);
 
   const selectedUnit = units.find((u) => u.id === unitId);
 

@@ -12,8 +12,7 @@ import { PhysicsTextarea } from "@/components/PhysicsTextarea";
 import { PhysicsSelect } from "@/components/PhysicsSelect";
 import { ArrowLeft, MessageCircle, Plus, Trash2, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
-import { deleteTenant } from "@/lib/apt.functions";
+import { deleteTenantClient } from "@/lib/serverFns";
 
 export const Route = createFileRoute("/app/tenants/$id")({
   component: TenantProfile,
@@ -24,7 +23,7 @@ function TenantProfile() {
   const { data: me } = useSessionProfile();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const del = useServerFn(deleteTenant);
+  const del = (opts: any) => deleteTenantClient(opts.data);
 
   const tenant = useQuery({
     queryKey: ["tenant", id],

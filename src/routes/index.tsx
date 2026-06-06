@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, ArrowUpRight, KeyRound, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/client";
-import { ensureOwner } from "@/lib/apt.functions";
-import { useServerFn } from "@tanstack/react-start";
+import { ensureOwnerClient } from "@/lib/serverFns";
 import { emailForCode, passwordForCode } from "@/lib/codes";
 import { biometricsSupported, getStoredBiometric, unlockWithBiometric, registerBiometric, clearBiometric } from "@/lib/biometrics";
 import { Blobs } from "@/components/Blobs";
@@ -25,14 +24,14 @@ export const Route = createFileRoute("/")({
 
 function LoginScreen() {
   const navigate = useNavigate();
-  const ensure = useServerFn(ensureOwner);
+  
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"bio" | "code">(getStoredBiometric() ? "bio" : "code");
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const hasBio = !!getStoredBiometric();
 
-  useEffect(() => { ensure({ data: undefined as never }).catch(() => {}); }, [ensure]);
+  useEffect(() => { ensureOwnerClient().catch(() => {}); }, []);
 
   // If already signed in, redirect
   useEffect(() => {

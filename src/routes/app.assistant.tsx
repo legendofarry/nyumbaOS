@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/client";
 import { useSessionProfile } from "@/lib/use-profile";
 import { PageHeader } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";
-import { useServerFn } from "@tanstack/react-start";
-import { askAssistant } from "@/lib/apt.functions";
+import { askAssistantClient } from "@/lib/serverFns";
 import { Send, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -22,7 +21,7 @@ function AssistantPage() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const ask = useServerFn(askAssistant);
+  const ask = (opts: any) => askAssistantClient(opts.data);
   const scroller = useRef<HTMLDivElement>(null);
 
   const ctx = useQuery({

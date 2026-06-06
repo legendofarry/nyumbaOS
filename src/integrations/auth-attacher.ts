@@ -1,11 +1,8 @@
-// Firebase auth middleware: attach Firebase ID token as Bearer for serverFn RPCs
-import { createMiddleware } from '@tanstack/react-start'
-import { supabase } from './client'
+// Helper to produce auth headers for server API calls. Returns an object or empty object.
+import { supabase } from './client';
 
-export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
-  async ({ next }) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  },
-)
+export async function attachSupabaseAuth() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
