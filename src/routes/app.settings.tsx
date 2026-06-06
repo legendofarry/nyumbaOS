@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/client";
 import { useSessionProfile } from "@/lib/use-profile";
 import { PageHeader } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";

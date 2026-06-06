@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/client";
 import { useSessionProfile } from "@/lib/use-profile";
 import { AppShell } from "@/components/AppShell";
 import { Blobs } from "@/components/Blobs";

@@ -4,7 +4,7 @@ import { OWNER_CODE, OWNER_EMAIL, emailForCode, passwordForCode } from "./codes"
 
 /** Ensure owner auth user + profile exist. Called on app boot. */
 export const ensureOwner = createServerFn({ method: "POST" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin } = await import("@/integrations/client.server");
 
   // Try to find by email
   const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
@@ -51,7 +51,7 @@ const CreateTenantSchema = z.object({
 export const createTenant = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => CreateTenantSchema.parse(d))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/integrations/client.server");
 
     // Generate a unique 4-digit code (avoid owner code)
     let code = "";
@@ -99,7 +99,7 @@ const DeleteTenantSchema = z.object({ tenant_id: z.string().uuid() });
 export const deleteTenant = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => DeleteTenantSchema.parse(d))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin } = await import("@/integrations/client.server");
     await supabaseAdmin.auth.admin.deleteUser(data.tenant_id);
     return { ok: true };
   });

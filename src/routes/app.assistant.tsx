@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/client";
 import { useSessionProfile } from "@/lib/use-profile";
 import { PageHeader } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";

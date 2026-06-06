@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Fingerprint, ArrowUpRight, KeyRound, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/client";
 import { ensureOwner } from "@/lib/apt.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { emailForCode, passwordForCode } from "@/lib/codes";

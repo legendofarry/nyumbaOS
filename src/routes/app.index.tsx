@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/client";
 import { useSessionProfile } from "@/lib/use-profile";
 import { PageHeader, GearLink, Money, Stat } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
