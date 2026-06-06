@@ -1,14 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { OWNER_CODE, OWNER_EMAIL, emailForCode, passwordForCode } from "./codes";
+import { DEFAULT_UNITS } from "./defaults";
 
 /** Ensure owner auth user + profile exist. Called on app boot. */
 export const ensureOwner = createServerFn({ method: "POST" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/client.server");
-
   // Try to find by email
-  const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  let owner = list?.users?.find((u) => u.email === OWNER_EMAIL);
+  const { data: list } = await supabaseAdmin.auth.admin.listUsers();
+  let owner = list?.users?.find((u: any) => u.email === OWNER_EMAIL);
 
   if (!owner) {
     const created = await supabaseAdmin.auth.admin.createUser({
@@ -16,8 +16,8 @@ export const ensureOwner = createServerFn({ method: "POST" }).handler(async () =
       password: `owner-secret-${OWNER_CODE}-aptv1`,
       email_confirm: true,
     });
-    if (created.error) throw new Error(created.error.message);
-    owner = created.data.user!;
+    if (created.error) throw new Error(created.error.message || String(created.error));
+    owner = created.data.user;
     await supabaseAdmin.from("profiles").upsert({
       id: owner.id,
       role: "owner",
@@ -34,6 +34,14 @@ export const ensureOwner = createServerFn({ method: "POST" }).handler(async () =
         full_name: "Owner",
         login_code: OWNER_CODE,
       });
+    }
+  }
+
+  // Seed default units if none exist
+  const { data: someUnits } = await supabaseAdmin.from("units").select("*").limit(1);
+  if (!someUnits || (Array.isArray(someUnits) && someUnits.length === 0)) {
+    for (const u of DEFAULT_UNITS) {
+      await supabaseAdmin.from("units").upsert(u);
     }
   }
   return { ok: true };
@@ -113,30 +121,7 @@ const AiSchema = z.object({
 export const askAssistant = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => AiSchema.parse(d))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("AI key missing");
-
-    const sys = data.role === "owner"
-      ? `You are 'Nest AI', a sharp, friendly property-management copilot for an apartment OWNER in Kenya. Currency is always KSh. Be concise, proactive, and surface unsettled rent, overdue tenants, recent posts, and money owed. Use bullet points when listing. When summarising, format with bold headings.`
-      : `You are 'Nest AI', a warm, helpful assistant for a TENANT in an apartment. Currency is always KSh. Help with rent balances, posting notices, contacting neighbours, and general apartment life questions. Be concise and friendly.`;
-
-    const ctx = data.context_json ? `\n\nLIVE CONTEXT (JSON):\n${data.context_json}` : "";
-
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: sys + ctx }, ...data.messages],
-      }),
-    });
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`AI error ${res.status}: ${t.slice(0, 200)}`);
-    }
-    const json = await res.json();
-    return { text: json.choices?.[0]?.message?.content ?? "" };
+    // Lovable AI integration removed. Configure an alternative AI provider
+    // (e.g., OpenAI, Google, or a self-hosted model) and update this function.
+    throw new Error("Lovable AI integration removed. Configure an alternative AI provider.");
   });
