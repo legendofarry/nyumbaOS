@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     match /profiles/{profileId} {
-      allow read: if isOwnerTeam() || ownsProfile(profileId);
+      allow read: if signedIn();
       allow create: if isOwnerTeam() || ownsProfile(profileId);
       allow update: if isOwnerTeam() || ownsProfile(profileId);
       allow delete: if isOwnerTeam();
@@ -66,8 +66,7 @@ service cloud.firestore {
     }
 
     match /units/{unitId} {
-      // Public read is needed by tenant sign-in, where tenants select their unit before auth.
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isOwnerTeam();
     }
 
@@ -98,6 +97,18 @@ service cloud.firestore {
     match /payments/{paymentId} {
       allow read: if isOwnerTeam() || (isTenant() && resource.data.tenant_id == request.auth.uid);
       allow write: if isOwnerTeam();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.author_id == request.auth.uid;
+      allow update, delete: if isOwnerTeam() || (signedIn() && resource.data.author_id == request.auth.uid);
+    }
+
+    match /messages/{messageId} {
+      allow read: if isOwnerTeam() || (signedIn() && (resource.data.sender_id == request.auth.uid || resource.data.recipient_id == request.auth.uid));
+      allow create: if signedIn() && request.resource.data.sender_id == request.auth.uid;
+      allow update, delete: if isOwnerTeam() || (signedIn() && (resource.data.sender_id == request.auth.uid || resource.data.recipient_id == request.auth.uid));
     }
 
     match /readings/{readingId} {

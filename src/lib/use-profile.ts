@@ -1,27 +1,54 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/client";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
-export type Profile = {
-  id: string;
-  role: "owner" | "tenant";
-  full_name: string;
-  login_code: string | null;
-  unit_id: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  agreed_rent: number | null;
-  theme_accent: string | null;
+import { auth, db } from "@/integrations/client";
+import type { Profile } from "@/integrations/types";
+
+type SessionProfileState = {
+  data: Profile | null;
+  isLoading: boolean;
+  user: User | null;
 };
 
-export function useSessionProfile() {
-  return useQuery({
-    queryKey: ["session-profile"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      return data as Profile | null;
-    },
-  });
+export function useSessionProfile(): SessionProfileState {
+  const [data, setData] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    let profileUnsubscribe: (() => void) | undefined;
+
+    const authUnsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      profileUnsubscribe?.();
+      setUser(nextUser);
+
+      if (!nextUser) {
+        setData(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      profileUnsubscribe = onSnapshot(
+        doc(db, "profiles", nextUser.uid),
+        (snapshot) => {
+          setData(snapshot.exists() ? ({ id: snapshot.id, ...(snapshot.data() as Profile) } as Profile) : null);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error(error);
+          setData(null);
+          setIsLoading(false);
+        },
+      );
+    });
+
+    return () => {
+      profileUnsubscribe?.();
+      authUnsubscribe();
+    };
+  }, []);
+
+  return { data, isLoading, user };
 }

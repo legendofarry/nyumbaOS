@@ -1,13 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
-  Link,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
-  Scripts,
+  Link,
+  Outlet,
+  useRouter,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -78,16 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Makazi" },
-      { name: "description", content: "Apartment Harmony is a mobile-first application for apartment owners and tenants to manage communications and payments." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Makazi" },
-      { property: "og:description", content: "Apartment Harmony is a mobile-first application for apartment owners and tenants to manage communications and payments." },
+      { title: "Apartment" },
+      { name: "description", content: "Firebase-first apartment management for owners and tenants." },
+      { name: "author", content: "Apartment" },
+      { property: "og:title", content: "Apartment" },
+      { property: "og:description", content: "Firebase-first apartment management for owners and tenants." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Makazi" },
-      { name: "twitter:description", content: "Apartment Harmony is a mobile-first application for apartment owners and tenants to manage communications and payments." },
+      { name: "twitter:site", content: "@Apartment" },
+      { name: "twitter:title", content: "Apartment" },
+      { name: "twitter:description", content: "Firebase-first apartment management for owners and tenants." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2ce41007-2b64-4e2c-a2ec-871e19617527/id-preview-1c13a070--6d7f382d-ec93-4d6e-98ac-64267603545d.lovable.app-1780739871055.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2ce41007-2b64-4e2c-a2ec-871e19617527/id-preview-1c13a070--6d7f382d-ec93-4d6e-98ac-64267603545d.lovable.app-1780739871055.png" },
     ],
@@ -101,31 +100,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
+      <HeadContent />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" theme="dark" richColors />

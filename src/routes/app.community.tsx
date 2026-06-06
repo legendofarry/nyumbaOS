@@ -1,17 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { addDoc, collection, getDocs } from "firebase/firestore";
+import { Crown, Eye, Plus, Send, Users } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/integrations/client";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+
+import { db } from "@/integrations/client";
+import type { Post, Profile } from "@/integrations/types";
+import { fromCollection, sortByCreatedAtDesc, sortByName } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
-import { PageHeader } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
+import { PageHeader } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";
-import { PhysicsTextarea } from "@/components/PhysicsTextarea";
 import { PhysicsSelect } from "@/components/PhysicsSelect";
 import { PhysicsSheet } from "@/components/PhysicsSheet";
-import { Plus, Users, Eye, Crown, Send } from "lucide-react";
-import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { PhysicsTextarea } from "@/components/PhysicsTextarea";
 
 export const Route = createFileRoute("/app/community")({
   component: CommunityPage,
@@ -24,37 +28,50 @@ function CommunityPage() {
 
   const posts = useQuery({
     queryKey: ["posts"],
-    queryFn: async () => (await supabase.from("posts").select("*").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => sortByCreatedAtDesc(fromCollection<Post>(await getDocs(collection(db, "posts")))),
   });
   const people = useQuery({
     queryKey: ["people"],
-    queryFn: async () => (await supabase.from("profiles").select("id, full_name, role, avatar_url, unit_id")).data ?? [],
+    queryFn: async () => sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles")))),
   });
 
   return (
     <div>
-      <PageHeader title="Notice board" subtitle="Posts from owner & tenants"
-        right={<PhysicsButton size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Post</PhysicsButton>} />
-      <div className="px-5 space-y-3">
-        {(posts.data ?? []).map((p: any) => {
-          const author = people.data?.find((x: any) => x.id === p.author_id);
+      <PageHeader
+        title="Notice board"
+        subtitle="Posts from owner & tenants"
+        right={
+          <PhysicsButton size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> Post
+          </PhysicsButton>
+        }
+      />
+      <div className="space-y-3 px-5">
+        {(posts.data ?? []).map((post) => {
+          const author = people.data?.find((person) => person.id === post.author_id);
           return (
-            <motion.article key={p.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              className="glass-strong rounded-3xl p-4">
+            <motion.article key={post.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="glass-strong rounded-3xl p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={author?.full_name ?? "?"} url={author?.avatar_url} size={40} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate flex items-center gap-1.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 truncate font-semibold">
                     {author?.full_name ?? "Unknown"}
-                    {author?.role === "owner" && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal/20 text-teal flex items-center gap-1"><Crown className="h-2.5 w-2.5" />Owner</span>}
+                    {author?.role === "owner" && (
+                      <span className="flex items-center gap-1 rounded-full bg-teal/20 px-1.5 py-0.5 text-[10px] text-teal">
+                        <Crown className="h-2.5 w-2.5" />
+                        Owner
+                      </span>
+                    )}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {new Date(p.created_at).toLocaleString()} · {audienceLabel(p)}
+                    {new Date(post.created_at).toLocaleString()} · {audienceLabel(post)}
                   </div>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/5 px-2 py-1 rounded-full">{p.category}</span>
+                <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {post.category}
+                </span>
               </div>
-              <p className="mt-3 text-[15px] leading-relaxed whitespace-pre-wrap">{p.content}</p>
+              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</p>
             </motion.article>
           );
         })}
@@ -64,80 +81,110 @@ function CommunityPage() {
       <PhysicsSheet open={open} onClose={() => setOpen(false)} title="New post">
         <ComposePost
           me={me}
-          people={(people.data ?? []).filter((x: any) => x.id !== me?.id)}
-          onPosted={() => { setOpen(false); qc.invalidateQueries({ queryKey: ["posts"] }); }} />
+          people={(people.data ?? []).filter((person) => person.id !== me?.id)}
+          onPosted={() => {
+            setOpen(false);
+            qc.invalidateQueries({ queryKey: ["posts"] });
+          }}
+        />
       </PhysicsSheet>
     </div>
   );
 }
 
-function audienceLabel(p: any) {
-  if (p.audience === "all") return "Everyone";
-  if (p.audience === "owner") return "Owner only";
-  if (p.audience === "specific") return `${p.target_ids?.length ?? 0} recipients`;
-  return p.audience;
+function audienceLabel(post: Post) {
+  if (post.audience === "all") return "Everyone";
+  if (post.audience === "owner") return "Owner only";
+  if (post.audience === "specific") return `${post.target_ids?.length ?? 0} recipients`;
+  return post.audience;
 }
 
-function ComposePost({ me, people, onPosted }: { me: any; people: any[]; onPosted: () => void }) {
+function ComposePost({ me, people, onPosted }: { me: Profile | null | undefined; people: Profile[]; onPosted: () => void }) {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<string | null>("general");
   const [audience, setAudience] = useState<string | null>(me?.role === "owner" ? "all" : "all");
   const [targets, setTargets] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const audienceOptions = me?.role === "owner"
-    ? [
-        { value: "all", label: "Everyone", hint: "All tenants see this" },
-        { value: "specific", label: "Specific tenants", hint: "Pick recipients" },
-      ]
-    : [
-        { value: "all", label: "Everyone", hint: "All neighbors & owner" },
-        { value: "owner", label: "Owner only", hint: "Private to owner" },
-        { value: "specific", label: "Specific neighbors", hint: "Pick recipients" },
-      ];
+  const audienceOptions =
+    me?.role === "owner"
+      ? [
+          { value: "all", label: "Everyone", hint: "All tenants see this" },
+          { value: "specific", label: "Specific tenants", hint: "Pick recipients" },
+        ]
+      : [
+          { value: "all", label: "Everyone", hint: "All neighbors & owner" },
+          { value: "owner", label: "Owner only", hint: "Private to owner" },
+          { value: "specific", label: "Specific neighbors", hint: "Pick recipients" },
+        ];
 
   async function submit() {
-    if (!content.trim()) { toast.error("Write something first"); return; }
+    if (!content.trim() || !me) {
+      toast.error("Write something first");
+      return;
+    }
+
     setBusy(true);
-    const { error } = await supabase.from("posts").insert({
-      author_id: me.id,
-      content: content.trim(),
-      category: category ?? "general",
-      audience: audience ?? "all",
-      target_ids: audience === "specific" ? targets : [],
-    });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Posted");
-    onPosted();
+    try {
+      await addDoc(collection(db, "posts"), {
+        author_id: me.id,
+        content: content.trim(),
+        category: category ?? "general",
+        audience: audience ?? "all",
+        target_ids: audience === "specific" ? targets : [],
+        created_at: new Date().toISOString(),
+      } satisfies Omit<Post, "id">);
+      toast.success("Posted");
+      onPosted();
+    } catch (error: any) {
+      toast.error(error.message || "Could not create post");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="space-y-3">
-      <PhysicsTextarea label="What's on your mind?" placeholder="Water will be off tomorrow 9–11am…" value={content} onChange={(e) => setContent(e.target.value)} />
+      <PhysicsTextarea
+        label="What's on your mind?"
+        placeholder="Water will be off tomorrow 9-11am..."
+        value={content}
+        onChange={(event) => setContent(event.target.value)}
+      />
       <div className="grid grid-cols-2 gap-2">
-        <PhysicsSelect label="Category" value={category} onChange={setCategory} options={[
-          { value: "general", label: "General" },
-          { value: "notice", label: "Notice" },
-          { value: "maintenance", label: "Maintenance" },
-          { value: "event", label: "Event" },
-          { value: "request", label: "Request" },
-        ]} />
+        <PhysicsSelect
+          label="Category"
+          value={category}
+          onChange={setCategory}
+          options={[
+            { value: "general", label: "General" },
+            { value: "notice", label: "Notice" },
+            { value: "maintenance", label: "Maintenance" },
+            { value: "event", label: "Event" },
+            { value: "request", label: "Request" },
+          ]}
+        />
         <PhysicsSelect label="Visibility" value={audience} onChange={setAudience} options={audienceOptions} />
       </div>
 
       {audience === "specific" && (
         <div>
-          <div className="text-xs font-medium text-muted-foreground mb-1.5 px-1 flex items-center gap-1"><Users className="h-3 w-3" /> Pick recipients</div>
-          <div className="glass rounded-2xl p-2 max-h-56 overflow-auto space-y-1">
-            {people.map((p) => {
-              const checked = targets.includes(p.id);
+          <div className="mb-1.5 flex items-center gap-1 px-1 text-xs font-medium text-muted-foreground">
+            <Users className="h-3 w-3" /> Pick recipients
+          </div>
+          <div className="max-h-56 space-y-1 overflow-auto rounded-2xl glass p-2">
+            {people.map((person) => {
+              const checked = targets.includes(person.id);
               return (
-                <button key={p.id} type="button" onClick={() => setTargets((t) => checked ? t.filter((x) => x !== p.id) : [...t, p.id])}
-                  className={`w-full flex items-center gap-2 p-2 rounded-xl transition-colors ${checked ? "bg-teal/20" : "hover:bg-white/5"}`}>
-                  <Avatar name={p.full_name} url={p.avatar_url} size={32} />
-                  <span className="flex-1 text-left text-sm font-medium">{p.full_name}</span>
-                  <span className={`h-4 w-4 rounded-md border ${checked ? "bg-teal border-teal" : "border-white/20"}`} />
+                <button
+                  key={person.id}
+                  type="button"
+                  onClick={() => setTargets((current) => (checked ? current.filter((id) => id !== person.id) : [...current, person.id]))}
+                  className={`flex w-full items-center gap-2 rounded-xl p-2 transition-colors ${checked ? "bg-teal/20" : "hover:bg-white/5"}`}
+                >
+                  <Avatar name={person.full_name} url={person.avatar_url} size={32} />
+                  <span className="flex-1 text-left text-sm font-medium">{person.full_name}</span>
+                  <span className={`h-4 w-4 rounded-md border ${checked ? "border-teal bg-teal" : "border-white/20"}`} />
                 </button>
               );
             })}
@@ -145,7 +192,7 @@ function ComposePost({ me, people, onPosted }: { me: any; people: any[]; onPoste
         </div>
       )}
 
-      <div className="glass rounded-2xl p-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="glass flex items-center gap-2 rounded-2xl p-3 text-xs text-muted-foreground">
         <Eye className="h-3.5 w-3.5" />
         {audience === "all" && "Everyone in the building will see this."}
         {audience === "owner" && "Only the owner will see this."}

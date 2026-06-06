@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { onAuthStateChanged } from "firebase/auth";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/client";
-import { useSessionProfile } from "@/lib/use-profile";
-import { AppShell } from "@/components/AppShell";
+
+import { auth } from "@/integrations/client";
 import { Blobs } from "@/components/Blobs";
+import { AppShell } from "@/components/AppShell";
+import { useSessionProfile } from "@/lib/use-profile";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
@@ -15,18 +17,18 @@ function AppLayout() {
   const { data: profile, isLoading } = useSessionProfile();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) navigate({ to: "/" });
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate({ to: "/" });
+      }
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (!s) navigate({ to: "/" });
-    });
-    return () => sub.subscription.unsubscribe();
+
+    return unsubscribe;
   }, [navigate]);
 
   if (isLoading || !profile) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center text-muted-foreground">
+      <div className="flex min-h-[100dvh] items-center justify-center text-muted-foreground">
         <Blobs />
         <div className="text-sm">Loading…</div>
       </div>

@@ -1,9 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/client";
+import { collection, getDocs } from "firebase/firestore";
+import { ChevronRight } from "lucide-react";
+
+import { db } from "@/integrations/client";
+import type { Profile, Unit } from "@/integrations/types";
+import { fromCollection, sortByName } from "@/lib/firestore";
 import { PageHeader } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
-import { ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/app/people")({
   component: PeoplePage,
@@ -12,42 +16,47 @@ export const Route = createFileRoute("/app/people")({
 function PeoplePage() {
   const people = useQuery({
     queryKey: ["people"],
-    queryFn: async () => (await supabase.from("profiles").select("*").order("full_name")).data ?? [],
+    queryFn: async () => sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles")))),
   });
   const units = useQuery({
     queryKey: ["units"],
-    queryFn: async () => (await supabase.from("units").select("*")).data ?? [],
+    queryFn: async () => fromCollection<Unit>(await getDocs(collection(db, "units"))),
   });
 
-  const owner = people.data?.find((p: any) => p.role === "owner");
-  const tenants = (people.data ?? []).filter((p: any) => p.role === "tenant");
+  const owner = people.data?.find((person) => person.role === "owner");
+  const tenants = (people.data ?? []).filter((person) => person.role === "tenant");
 
   return (
     <div>
       <PageHeader title="Neighbors" subtitle={`${tenants.length} tenants in the building`} />
-      <div className="px-5 space-y-3">
+      <div className="space-y-3 px-5">
         {owner && (
           <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground px-1 mb-2">Owner</div>
-            <Link to="/app/tenants/$id" params={{ id: owner.id }} className="glass rounded-2xl p-3 flex items-center gap-3">
+            <div className="mb-2 px-1 text-xs uppercase tracking-wider text-muted-foreground">Owner</div>
+            <Link to="/app/tenants/$id" params={{ id: owner.id }} className="glass flex items-center gap-3 rounded-2xl p-3">
               <Avatar name={owner.full_name} url={owner.avatar_url} size={46} />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{owner.full_name}</div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold">{owner.full_name}</div>
                 <div className="text-xs text-teal">Property owner</div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           </div>
         )}
-        <div className="text-xs uppercase tracking-wider text-muted-foreground px-1 mt-2 mb-2">Tenants</div>
-        {tenants.map((t: any) => {
-          const unit = units.data?.find((u: any) => u.id === t.unit_id);
+        <div className="mb-2 mt-2 px-1 text-xs uppercase tracking-wider text-muted-foreground">Tenants</div>
+        {tenants.map((tenant) => {
+          const unit = units.data?.find((entry) => entry.id === tenant.unit_id);
           return (
-            <Link key={t.id} to="/app/tenants/$id" params={{ id: t.id }} className="glass rounded-2xl p-3 flex items-center gap-3">
-              <Avatar name={t.full_name} url={t.avatar_url} size={46} />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{t.full_name}</div>
-                <div className="text-xs text-muted-foreground truncate">{unit?.label ?? "Unit unknown"}</div>
+            <Link
+              key={tenant.id}
+              to="/app/tenants/$id"
+              params={{ id: tenant.id }}
+              className="glass flex items-center gap-3 rounded-2xl p-3"
+            >
+              <Avatar name={tenant.full_name} url={tenant.avatar_url} size={46} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold">{tenant.full_name}</div>
+                <div className="truncate text-xs text-muted-foreground">{unit?.label ?? "Unit unknown"}</div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
