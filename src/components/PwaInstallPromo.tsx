@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
-import { Download, Smartphone, Sparkles, X } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePwaInstallPrompt } from "@/lib/use-pwa-install";
@@ -20,37 +20,7 @@ function FeatureChip({ children }: { children: string }) {
   );
 }
 
-function Illustration() {
-  return (
-    <div className="relative flex justify-center">
-      <div className="absolute inset-0 rounded-[2.2rem] bg-teal/20 blur-3xl" />
-      <div className="relative w-[180px] rounded-[2rem] border border-white/10 bg-gradient-to-b from-[#12312c] to-[#091513] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.4)]">
-        <div className="mx-auto h-1.5 w-14 rounded-full bg-white/12" />
-        <div className="mt-4 rounded-[1.35rem] bg-white/5 p-3 ring-1 ring-white/8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-teal/20 text-teal ring-1 ring-teal/30">
-              <Smartphone className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Android feel</div>
-              <div className="mt-0.5 text-sm font-semibold text-foreground">Apartment installed</div>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-teal/18 p-2.5 ring-1 ring-teal/20">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-teal">Full screen</div>
-              <div className="mt-1 text-xs text-foreground/90">Feels native on Android</div>
-            </div>
-            <div className="rounded-2xl bg-white/6 p-2.5 ring-1 ring-white/8">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Faster</div>
-              <div className="mt-1 text-xs text-foreground/90">Open from your home screen</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 export function PwaInstallPromo({ variant = "compact", className }: Props) {
   const { canPrompt, dismiss, installed, promptInstall, showPrompt } = usePwaInstallPrompt();
@@ -109,7 +79,7 @@ export function PwaInstallPromo({ variant = "compact", className }: Props) {
           <div className="absolute inset-0 bg-gradient-to-br from-teal/15 via-transparent to-transparent" />
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-teal/20 blur-3xl" />
           <div className="relative">
-            <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr] md:items-center">
+            <div className="grid gap-5 md:grid-cols-1 md:items-center">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
                   <Sparkles className="h-3 w-3 text-teal" />
@@ -141,7 +111,6 @@ export function PwaInstallPromo({ variant = "compact", className }: Props) {
                   </PhysicsButton>
                 </div>
               </div>
-              <Illustration />
             </div>
           </div>
         </motion.section>
