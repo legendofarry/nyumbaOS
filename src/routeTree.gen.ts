@@ -9,64 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UtilitiesRouteImport } from './routes/utilities'
-import { Route as TenantsRouteImport } from './routes/tenants'
-import { Route as TenantRouteImport } from './routes/tenant'
-import { Route as RentRouteImport } from './routes/rent'
-import { Route as NoticesRouteImport } from './routes/notices'
-import { Route as MaintenanceRouteImport } from './routes/maintenance'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CalendarRouteImport } from './routes/calendar'
-import { Route as BuildingRouteImport } from './routes/building'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TenantUtilitiesRouteImport } from './routes/tenant.utilities'
-import { Route as TenantNoticesRouteImport } from './routes/tenant.notices'
-import { Route as TenantMaintenanceRouteImport } from './routes/tenant.maintenance'
-import { Route as TenantBillingRouteImport } from './routes/tenant.billing'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppTenantsRouteImport } from './routes/app.tenants'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppPeopleRouteImport } from './routes/app.people'
+import { Route as AppMessagesRouteImport } from './routes/app.messages'
+import { Route as AppCommunityRouteImport } from './routes/app.community'
+import { Route as AppAssistantRouteImport } from './routes/app.assistant'
+import { Route as AppTenantsIdRouteImport } from './routes/app.tenants.$id'
+import { Route as AppMessagesIdRouteImport } from './routes/app.messages.$id'
 
-const UtilitiesRoute = UtilitiesRouteImport.update({
-  id: '/utilities',
-  path: '/utilities',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantsRoute = TenantsRouteImport.update({
-  id: '/tenants',
-  path: '/tenants',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TenantRoute = TenantRouteImport.update({
-  id: '/tenant',
-  path: '/tenant',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RentRoute = RentRouteImport.update({
-  id: '/rent',
-  path: '/rent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NoticesRoute = NoticesRouteImport.update({
-  id: '/notices',
-  path: '/notices',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MaintenanceRoute = MaintenanceRouteImport.update({
-  id: '/maintenance',
-  path: '/maintenance',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuildingRoute = BuildingRouteImport.update({
-  id: '/building',
-  path: '/building',
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -74,203 +31,144 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TenantUtilitiesRoute = TenantUtilitiesRouteImport.update({
-  id: '/utilities',
-  path: '/utilities',
-  getParentRoute: () => TenantRoute,
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
 } as any)
-const TenantNoticesRoute = TenantNoticesRouteImport.update({
-  id: '/notices',
-  path: '/notices',
-  getParentRoute: () => TenantRoute,
+const AppTenantsRoute = AppTenantsRouteImport.update({
+  id: '/tenants',
+  path: '/tenants',
+  getParentRoute: () => AppRoute,
 } as any)
-const TenantMaintenanceRoute = TenantMaintenanceRouteImport.update({
-  id: '/maintenance',
-  path: '/maintenance',
-  getParentRoute: () => TenantRoute,
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
 } as any)
-const TenantBillingRoute = TenantBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => TenantRoute,
+const AppPeopleRoute = AppPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMessagesRoute = AppMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCommunityRoute = AppCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAssistantRoute = AppAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTenantsIdRoute = AppTenantsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppTenantsRoute,
+} as any)
+const AppMessagesIdRoute = AppMessagesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppMessagesRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/building': typeof BuildingRoute
-  '/calendar': typeof CalendarRoute
-  '/dashboard': typeof DashboardRoute
-  '/maintenance': typeof MaintenanceRoute
-  '/notices': typeof NoticesRoute
-  '/rent': typeof RentRoute
-  '/tenant': typeof TenantRouteWithChildren
-  '/tenants': typeof TenantsRoute
-  '/utilities': typeof UtilitiesRoute
-  '/tenant/billing': typeof TenantBillingRoute
-  '/tenant/maintenance': typeof TenantMaintenanceRoute
-  '/tenant/notices': typeof TenantNoticesRoute
-  '/tenant/utilities': typeof TenantUtilitiesRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/community': typeof AppCommunityRoute
+  '/app/messages': typeof AppMessagesRouteWithChildren
+  '/app/people': typeof AppPeopleRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tenants': typeof AppTenantsRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/messages/$id': typeof AppMessagesIdRoute
+  '/app/tenants/$id': typeof AppTenantsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/building': typeof BuildingRoute
-  '/calendar': typeof CalendarRoute
-  '/dashboard': typeof DashboardRoute
-  '/maintenance': typeof MaintenanceRoute
-  '/notices': typeof NoticesRoute
-  '/rent': typeof RentRoute
-  '/tenant': typeof TenantRouteWithChildren
-  '/tenants': typeof TenantsRoute
-  '/utilities': typeof UtilitiesRoute
-  '/tenant/billing': typeof TenantBillingRoute
-  '/tenant/maintenance': typeof TenantMaintenanceRoute
-  '/tenant/notices': typeof TenantNoticesRoute
-  '/tenant/utilities': typeof TenantUtilitiesRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/community': typeof AppCommunityRoute
+  '/app/messages': typeof AppMessagesRouteWithChildren
+  '/app/people': typeof AppPeopleRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tenants': typeof AppTenantsRouteWithChildren
+  '/app': typeof AppIndexRoute
+  '/app/messages/$id': typeof AppMessagesIdRoute
+  '/app/tenants/$id': typeof AppTenantsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/building': typeof BuildingRoute
-  '/calendar': typeof CalendarRoute
-  '/dashboard': typeof DashboardRoute
-  '/maintenance': typeof MaintenanceRoute
-  '/notices': typeof NoticesRoute
-  '/rent': typeof RentRoute
-  '/tenant': typeof TenantRouteWithChildren
-  '/tenants': typeof TenantsRoute
-  '/utilities': typeof UtilitiesRoute
-  '/tenant/billing': typeof TenantBillingRoute
-  '/tenant/maintenance': typeof TenantMaintenanceRoute
-  '/tenant/notices': typeof TenantNoticesRoute
-  '/tenant/utilities': typeof TenantUtilitiesRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/community': typeof AppCommunityRoute
+  '/app/messages': typeof AppMessagesRouteWithChildren
+  '/app/people': typeof AppPeopleRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tenants': typeof AppTenantsRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/messages/$id': typeof AppMessagesIdRoute
+  '/app/tenants/$id': typeof AppTenantsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/building'
-    | '/calendar'
-    | '/dashboard'
-    | '/maintenance'
-    | '/notices'
-    | '/rent'
-    | '/tenant'
-    | '/tenants'
-    | '/utilities'
-    | '/tenant/billing'
-    | '/tenant/maintenance'
-    | '/tenant/notices'
-    | '/tenant/utilities'
+    | '/app'
+    | '/app/assistant'
+    | '/app/community'
+    | '/app/messages'
+    | '/app/people'
+    | '/app/settings'
+    | '/app/tenants'
+    | '/app/'
+    | '/app/messages/$id'
+    | '/app/tenants/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/building'
-    | '/calendar'
-    | '/dashboard'
-    | '/maintenance'
-    | '/notices'
-    | '/rent'
-    | '/tenant'
-    | '/tenants'
-    | '/utilities'
-    | '/tenant/billing'
-    | '/tenant/maintenance'
-    | '/tenant/notices'
-    | '/tenant/utilities'
+    | '/app/assistant'
+    | '/app/community'
+    | '/app/messages'
+    | '/app/people'
+    | '/app/settings'
+    | '/app/tenants'
+    | '/app'
+    | '/app/messages/$id'
+    | '/app/tenants/$id'
   id:
     | '__root__'
     | '/'
-    | '/building'
-    | '/calendar'
-    | '/dashboard'
-    | '/maintenance'
-    | '/notices'
-    | '/rent'
-    | '/tenant'
-    | '/tenants'
-    | '/utilities'
-    | '/tenant/billing'
-    | '/tenant/maintenance'
-    | '/tenant/notices'
-    | '/tenant/utilities'
+    | '/app'
+    | '/app/assistant'
+    | '/app/community'
+    | '/app/messages'
+    | '/app/people'
+    | '/app/settings'
+    | '/app/tenants'
+    | '/app/'
+    | '/app/messages/$id'
+    | '/app/tenants/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BuildingRoute: typeof BuildingRoute
-  CalendarRoute: typeof CalendarRoute
-  DashboardRoute: typeof DashboardRoute
-  MaintenanceRoute: typeof MaintenanceRoute
-  NoticesRoute: typeof NoticesRoute
-  RentRoute: typeof RentRoute
-  TenantRoute: typeof TenantRouteWithChildren
-  TenantsRoute: typeof TenantsRoute
-  UtilitiesRoute: typeof UtilitiesRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/utilities': {
-      id: '/utilities'
-      path: '/utilities'
-      fullPath: '/utilities'
-      preLoaderRoute: typeof UtilitiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenants': {
-      id: '/tenants'
-      path: '/tenants'
-      fullPath: '/tenants'
-      preLoaderRoute: typeof TenantsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tenant': {
-      id: '/tenant'
-      path: '/tenant'
-      fullPath: '/tenant'
-      preLoaderRoute: typeof TenantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rent': {
-      id: '/rent'
-      path: '/rent'
-      fullPath: '/rent'
-      preLoaderRoute: typeof RentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notices': {
-      id: '/notices'
-      path: '/notices'
-      fullPath: '/notices'
-      preLoaderRoute: typeof NoticesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/maintenance': {
-      id: '/maintenance'
-      path: '/maintenance'
-      fullPath: '/maintenance'
-      preLoaderRoute: typeof MaintenanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/building': {
-      id: '/building'
-      path: '/building'
-      fullPath: '/building'
-      preLoaderRoute: typeof BuildingRouteImport
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -280,75 +178,122 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tenant/utilities': {
-      id: '/tenant/utilities'
-      path: '/utilities'
-      fullPath: '/tenant/utilities'
-      preLoaderRoute: typeof TenantUtilitiesRouteImport
-      parentRoute: typeof TenantRoute
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/tenant/notices': {
-      id: '/tenant/notices'
-      path: '/notices'
-      fullPath: '/tenant/notices'
-      preLoaderRoute: typeof TenantNoticesRouteImport
-      parentRoute: typeof TenantRoute
+    '/app/tenants': {
+      id: '/app/tenants'
+      path: '/tenants'
+      fullPath: '/app/tenants'
+      preLoaderRoute: typeof AppTenantsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/tenant/maintenance': {
-      id: '/tenant/maintenance'
-      path: '/maintenance'
-      fullPath: '/tenant/maintenance'
-      preLoaderRoute: typeof TenantMaintenanceRouteImport
-      parentRoute: typeof TenantRoute
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/tenant/billing': {
-      id: '/tenant/billing'
-      path: '/billing'
-      fullPath: '/tenant/billing'
-      preLoaderRoute: typeof TenantBillingRouteImport
-      parentRoute: typeof TenantRoute
+    '/app/people': {
+      id: '/app/people'
+      path: '/people'
+      fullPath: '/app/people'
+      preLoaderRoute: typeof AppPeopleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/messages': {
+      id: '/app/messages'
+      path: '/messages'
+      fullPath: '/app/messages'
+      preLoaderRoute: typeof AppMessagesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/community': {
+      id: '/app/community'
+      path: '/community'
+      fullPath: '/app/community'
+      preLoaderRoute: typeof AppCommunityRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/assistant': {
+      id: '/app/assistant'
+      path: '/assistant'
+      fullPath: '/app/assistant'
+      preLoaderRoute: typeof AppAssistantRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/tenants/$id': {
+      id: '/app/tenants/$id'
+      path: '/$id'
+      fullPath: '/app/tenants/$id'
+      preLoaderRoute: typeof AppTenantsIdRouteImport
+      parentRoute: typeof AppTenantsRoute
+    }
+    '/app/messages/$id': {
+      id: '/app/messages/$id'
+      path: '/$id'
+      fullPath: '/app/messages/$id'
+      preLoaderRoute: typeof AppMessagesIdRouteImport
+      parentRoute: typeof AppMessagesRoute
     }
   }
 }
 
-interface TenantRouteChildren {
-  TenantBillingRoute: typeof TenantBillingRoute
-  TenantMaintenanceRoute: typeof TenantMaintenanceRoute
-  TenantNoticesRoute: typeof TenantNoticesRoute
-  TenantUtilitiesRoute: typeof TenantUtilitiesRoute
+interface AppMessagesRouteChildren {
+  AppMessagesIdRoute: typeof AppMessagesIdRoute
 }
 
-const TenantRouteChildren: TenantRouteChildren = {
-  TenantBillingRoute: TenantBillingRoute,
-  TenantMaintenanceRoute: TenantMaintenanceRoute,
-  TenantNoticesRoute: TenantNoticesRoute,
-  TenantUtilitiesRoute: TenantUtilitiesRoute,
+const AppMessagesRouteChildren: AppMessagesRouteChildren = {
+  AppMessagesIdRoute: AppMessagesIdRoute,
 }
 
-const TenantRouteWithChildren =
-  TenantRoute._addFileChildren(TenantRouteChildren)
+const AppMessagesRouteWithChildren = AppMessagesRoute._addFileChildren(
+  AppMessagesRouteChildren,
+)
+
+interface AppTenantsRouteChildren {
+  AppTenantsIdRoute: typeof AppTenantsIdRoute
+}
+
+const AppTenantsRouteChildren: AppTenantsRouteChildren = {
+  AppTenantsIdRoute: AppTenantsIdRoute,
+}
+
+const AppTenantsRouteWithChildren = AppTenantsRoute._addFileChildren(
+  AppTenantsRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppAssistantRoute: typeof AppAssistantRoute
+  AppCommunityRoute: typeof AppCommunityRoute
+  AppMessagesRoute: typeof AppMessagesRouteWithChildren
+  AppPeopleRoute: typeof AppPeopleRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTenantsRoute: typeof AppTenantsRouteWithChildren
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAssistantRoute: AppAssistantRoute,
+  AppCommunityRoute: AppCommunityRoute,
+  AppMessagesRoute: AppMessagesRouteWithChildren,
+  AppPeopleRoute: AppPeopleRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTenantsRoute: AppTenantsRouteWithChildren,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BuildingRoute: BuildingRoute,
-  CalendarRoute: CalendarRoute,
-  DashboardRoute: DashboardRoute,
-  MaintenanceRoute: MaintenanceRoute,
-  NoticesRoute: NoticesRoute,
-  RentRoute: RentRoute,
-  TenantRoute: TenantRouteWithChildren,
-  TenantsRoute: TenantsRoute,
-  UtilitiesRoute: UtilitiesRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

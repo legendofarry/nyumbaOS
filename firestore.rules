@@ -71,6 +71,24 @@ service cloud.firestore {
       allow write: if isOwnerTeam();
     }
 
+    match /unit_auth/{unitId} {
+      // PIN hashes and auth metadata must never be readable by clients.
+      allow read: if false;
+      allow create, update, delete: if isOwnerTeam();
+    }
+
+    match /management_auth/{docId} {
+      // Management PIN hashes must never be readable or writable by clients.
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /trustedDevices/{deviceId} {
+      // Trusted device tokens must only be managed server-side (via admin SDK / Cloud Functions)
+      allow read: if false;
+      allow write: if false;
+    }
+
     match /tenant_logins/{unitId} {
       allow get: if true;
       allow list: if false;
