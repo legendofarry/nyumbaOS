@@ -1,7 +1,7 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Download, Smartphone, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { usePwaInstallPrompt } from "@/lib/use-pwa-install";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,20 @@ function PhoneMock() {
 export function PwaInstallPromo({ variant = "compact", className, timed = false }: Props) {
   const { canPrompt, installed, promptInstall } = usePwaInstallPrompt();
   const [visible, setVisible] = useState(!timed);
+  const [showInstallHint, setShowInstallHint] = useState(false);
+  const installHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashInstallHint = () => {
+    if (installHintTimerRef.current) {
+      clearTimeout(installHintTimerRef.current);
+    }
+
+    setShowInstallHint(true);
+    installHintTimerRef.current = setTimeout(() => {
+      setShowInstallHint(false);
+      installHintTimerRef.current = null;
+    }, 3000);
+  };
 
   useEffect(() => {
     if (!timed) {
@@ -93,6 +107,14 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
     };
   }, [timed]);
 
+  useEffect(() => {
+    return () => {
+      if (installHintTimerRef.current) {
+        clearTimeout(installHintTimerRef.current);
+      }
+    };
+  }, []);
+
   if (installed || !visible) {
     return null;
   }
@@ -115,9 +137,11 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
 
   const handlePwaInstall = async () => {
     if (!canPrompt) {
-      toast.message("Open the browser menu on Android and choose Install app when available.");
+      toast.message("Native install is not available right now. Use the APK fallback below if needed.");
       return;
     }
+
+    flashInstallHint();
 
     const outcome = await promptInstall();
 
@@ -127,11 +151,11 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
     }
 
     if (outcome === "dismissed") {
-      toast.message("No problem. You can install it later from your browser menu.");
+      toast.message("Install popup was closed. You can try again anytime.");
       return;
     }
 
-    toast.message("PWA install is not available in this browser. Use the APK fallback below.");
+    toast.message("Native install is not available in this browser. Use the APK fallback below if needed.");
   };
 
   return (
@@ -141,6 +165,20 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
       transition={{ type: "spring", stiffness: 260, damping: 24 }}
       className={cn("glass-strong relative overflow-hidden rounded-[2rem] p-5 sm:p-6", className)}
     >
+      <AnimatePresence>
+        {showInstallHint ? (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-3 py-2 text-center text-[11px] font-medium text-foreground shadow-lg backdrop-blur-md"
+          >
+            Tap Install in the popup to add the app
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       <div className="absolute inset-0 bg-gradient-to-br from-teal/15 via-transparent to-transparent" />
       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-teal/20 blur-3xl" />
 
