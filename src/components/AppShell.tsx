@@ -24,9 +24,9 @@ function NavItem({ to, label, icon: Icon, active, badgeCount }: { to: string; la
         <Icon className="h-5 w-5" />
       </span>
       <span className={cn("relative z-10 text-[10px] font-medium tracking-wide", active ? "text-teal" : "text-muted-foreground")}>{label}</span>
-      {badgeCount && badgeCount > 0 && (
+      {(badgeCount ?? 0) > 0 && (
         <span className="absolute -top-1 -right-0.5 z-20 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal px-1 text-xs font-semibold text-primary-foreground">
-          {badgeCount > 99 ? "99+" : badgeCount}
+          {(badgeCount ?? 0) > 99 ? "99+" : (badgeCount ?? 0)}
         </span>
       )}
     </Link>
