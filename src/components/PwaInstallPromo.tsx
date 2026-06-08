@@ -13,7 +13,7 @@ type Props = {
   timed?: boolean;
 };
 
-const VISIBLE_MS = 4000;
+const VISIBLE_MS = 4000000;
 const REPEAT_MS = 10 * 60 * 1000;
 
 function FeatureChip({ children }: { children: string }) {
@@ -167,7 +167,7 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
           <div className="space-y-4">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
               <Sparkles className="h-3 w-3 text-teal" />
-              Install options
+              Install option
             </div>
             <div>
               <h2 className="font-display text-2xl font-bold tracking-tight">Install the app</h2>
@@ -177,8 +177,8 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
             </div>
             <div className="flex flex-wrap gap-2">
               <FeatureChip>Native install</FeatureChip>
-              <FeatureChip>Android friendly</FeatureChip>
-              <FeatureChip>Home screen</FeatureChip>
+              <FeatureChip>Better</FeatureChip>
+              <FeatureChip>Experience</FeatureChip>
             </div>
             <div className="flex flex-wrap gap-2">
               <PhysicsButton size="sm" onClick={handlePwaInstall}>
@@ -199,14 +199,13 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
               <Sparkles className="h-3 w-3 text-teal" />
               Install options
             </div>
-            <div className="mt-1.5 font-display text-lg font-bold tracking-tight">Install app</div>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               Use the native prompt to add the app to your home screen.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <FeatureChip>Native</FeatureChip>
-              <FeatureChip>Android</FeatureChip>
-              <FeatureChip>Home screen</FeatureChip>
+              <FeatureChip>Better</FeatureChip>
+              <FeatureChip>Experience</FeatureChip>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <PhysicsButton size="sm" onClick={handlePwaInstall}>
