@@ -10,6 +10,7 @@ import { db } from "@/integrations/client";
 import type { Post, Profile } from "@/integrations/types";
 import { fromCollection, sortByCreatedAtDesc, sortByName } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
+import { visiblePosts } from "@/lib/post-visibility";
 import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";
@@ -25,19 +26,23 @@ function CommunityPage() {
   const { data: me } = useSessionProfile();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
+  const loc = useLocation();
+  const isChildRoute = /^\/app\/community\/[^/]+$/.test(loc.pathname);
 
   const posts = useQuery({
     queryKey: ["posts"],
+    enabled: !isChildRoute,
     queryFn: async () => sortByCreatedAtDesc(fromCollection<Post>(await getDocs(collection(db, "posts")))),
   });
   const people = useQuery({
     queryKey: ["people"],
+    enabled: !isChildRoute,
     queryFn: async () => sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles")))),
   });
+  const visible = visiblePosts(posts.data ?? [], me);
 
-  const loc = useLocation();
   // If URL is /app/community/:id render the child route (full-screen post view)
-  if (typeof window !== "undefined" && /^\/app\/community\/[^/]+$/.test(loc.pathname)) {
+  if (isChildRoute) {
     return <Outlet />;
   }
 
@@ -53,7 +58,7 @@ function CommunityPage() {
         }
       />
       <div className="space-y-3 px-5">
-        {(posts.data ?? []).map((post) => {
+        {visible.map((post) => {
           const author = people.data?.find((person) => person.id === post.author_id);
           return (
             <Link to="/app/community/$id" params={{ id: post.id }} key={post.id}>
@@ -83,7 +88,7 @@ function CommunityPage() {
             </Link>
           );
         })}
-        {!posts.data?.length && <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</div>}
+        {!visible.length && <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</div>}
       </div>
 
       <PhysicsSheet open={open} onClose={() => setOpen(false)} title="New post">

@@ -28,21 +28,24 @@ function TenantsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
+  const loc = useLocation();
+  const isChildRoute = /^\/app\/tenants\/[^/]+$/.test(loc.pathname);
 
   const tenants = useQuery({
     queryKey: ["tenants"],
+    enabled: !isChildRoute,
     queryFn: async () =>
       sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles"))).filter((person) => person.role === "tenant")),
   });
   const units = useQuery({
     queryKey: ["units"],
+    enabled: !isChildRoute,
     queryFn: async () => (await getUnits()).sort((a, b) => `${a.floor}-${a.label}`.localeCompare(`${b.floor}-${b.label}`)),
     onError: (err) => console.error("units fetch error:", err),
   });
 
-  const loc = useLocation();
   // If URL is /app/tenants/:id, render the child route full-screen via Outlet
-  if (typeof window !== "undefined" && /^\/app\/tenants\/[^/]+$/.test(loc.pathname)) {
+  if (isChildRoute) {
     return <Outlet />;
   }
 

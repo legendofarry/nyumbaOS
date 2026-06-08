@@ -27,9 +27,9 @@ function PeoplePage() {
     queryFn: async () => getUnits(),
   });
 
-  const owner = people.data?.find((person) => person.role === "owner");
-  const tenants = (people.data ?? []).filter((person) => person.role === "tenant");
   const { data: me } = useSessionProfile();
+  const owner = people.data?.find((person) => person.role === "owner");
+  const tenants = (people.data ?? []).filter((person) => person.role === "tenant" && person.id !== me?.id);
   const [ownerModalOpen, setOwnerModalOpen] = useState(false);
 
   useEffect(() => {

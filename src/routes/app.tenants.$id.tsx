@@ -5,12 +5,6 @@ import { ArrowLeft, MessageCircle, Phone, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { db } from "@/integrations/client";
-import type { Payment, Profile, Unit } from "@/integrations/types";
-import { getUnit } from "@/lib/units";
-import { deleteTenant } from "@/lib/apt.functions";
-import { fromCollection, sortByCreatedAtDesc } from "@/lib/firestore";
-import { useSessionProfile } from "@/lib/use-profile";
 import { Avatar } from "@/components/Avatar";
 import { Money } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";
@@ -18,6 +12,12 @@ import { PhysicsInput } from "@/components/PhysicsInput";
 import { PhysicsSelect } from "@/components/PhysicsSelect";
 import { PhysicsSheet } from "@/components/PhysicsSheet";
 import { PhysicsTextarea } from "@/components/PhysicsTextarea";
+import { db } from "@/integrations/client";
+import type { Payment, Profile, Unit } from "@/integrations/types";
+import { deleteTenant } from "@/lib/apt.functions";
+import { fromCollection, sortByCreatedAtDesc } from "@/lib/firestore";
+import { useSessionProfile } from "@/lib/use-profile";
+import { getUnit } from "@/lib/units";
 
 export const Route = createFileRoute("/app/tenants/$id")({
   component: TenantProfile,
@@ -44,21 +44,85 @@ function TenantProfile() {
       return getUnit(tenant.data.unit_id);
     },
   });
+  const isOwnerViewer = me?.role === "owner";
+  const canViewProfile = !tenant.data || isOwnerViewer || tenant.data.role !== "owner";
   const payments = useQuery({
     queryKey: ["tenant-payments", id],
-    queryFn: async () => sortByCreatedAtDesc(fromCollection<Payment>(await getDocs(query(collection(db, "payments"), where("tenant_id", "==", id))))),
+    enabled: isOwnerViewer,
+    queryFn: async () =>
+      sortByCreatedAtDesc(fromCollection<Payment>(await getDocs(query(collection(db, "payments"), where("tenant_id", "==", id))))),
   });
 
-  if (!tenant.data) return <div className="px-5 pt-6 text-sm text-muted-foreground">Loading…</div>;
+  if (!tenant.data) return <div className="px-5 pt-6 text-sm text-muted-foreground">Loading...</div>;
+
+  if (!canViewProfile) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center px-5 text-center">
+        <div className="max-w-sm">
+          <h1 className="text-xl font-semibold tracking-tight">Profile unavailable</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Tenants can view other tenants, but the owner profile is hidden here.
+          </p>
+          <Link to="/app/people" className="mt-6 inline-flex items-center rounded-full glass px-4 py-2 text-sm font-medium">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to neighbors
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isOwnerViewer) {
+    return (
+      <div>
+        <header className="flex items-center gap-2 px-5 pb-2 pt-[max(env(safe-area-inset-top),1rem)]">
+          <Link to="/app/people" className="glass rounded-full p-2.5">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="ml-auto">
+            <Link to="/app/messages/$id" params={{ id: tenant.data.id }}>
+              <PhysicsButton variant="glass" size="sm">
+                <MessageCircle className="h-4 w-4" /> Message
+              </PhysicsButton>
+            </Link>
+          </div>
+        </header>
+
+        <div className="space-y-4 px-5">
+          <div className="glass-strong flex flex-col items-center rounded-3xl p-5 text-center">
+            <Avatar name={tenant.data.full_name} url={tenant.data.avatar_url} size={88} />
+            <div className="font-display mt-3 text-2xl font-bold">{tenant.data.full_name}</div>
+            <div className="text-sm text-muted-foreground">
+              {unit.data?.label ?? "Unit unknown"}
+              {unit.data ? ` · ${unit.data.floor} floor` : ""}
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">Moved in {new Date(tenant.data.created_at).toLocaleDateString()}</div>
+            {tenant.data.phone && (
+              <a href={`tel:${tenant.data.phone}`} className="mt-3 flex items-center gap-1 text-xs text-teal">
+                <Phone className="h-3 w-3" />
+                {tenant.data.phone}
+              </a>
+            )}
+            <div className="mt-4">
+              <Link to="/app/messages/$id" params={{ id: tenant.data.id }}>
+                <PhysicsButton>
+                  <MessageCircle className="h-4 w-4" /> Message
+                </PhysicsButton>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const paid = (payments.data ?? []).reduce((sum, payment) => sum + Number(payment.amount_ksh), 0);
   const owed = Math.max(0, Number(tenant.data.agreed_rent ?? 0) - paid);
-  const isOwner = me?.role === "owner";
 
   return (
     <div>
       <header className="flex items-center gap-2 px-5 pb-2 pt-[max(env(safe-area-inset-top),1rem)]">
-        <Link to={isOwner ? "/app/tenants" : "/app/people"} className="glass rounded-full p-2.5">
+        <Link to="/app/tenants" className="glass rounded-full p-2.5">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="ml-auto flex gap-2">
@@ -110,11 +174,9 @@ function TenantProfile() {
 
         <div className="flex items-center justify-between px-1">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Payments</div>
-          {isOwner && (
-            <PhysicsButton size="sm" variant="glass" onClick={() => setOpen(true)}>
-              <Plus className="h-3.5 w-3.5" /> Log
-            </PhysicsButton>
-          )}
+          <PhysicsButton size="sm" variant="glass" onClick={() => setOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> Log
+          </PhysicsButton>
         </div>
         <div className="space-y-2">
           {(payments.data ?? []).map((payment) => (
@@ -134,26 +196,24 @@ function TenantProfile() {
           {!payments.data?.length && <div className="glass rounded-2xl p-6 text-center text-sm text-muted-foreground">No payments yet</div>}
         </div>
 
-        {isOwner && (
-          <PhysicsButton
-            variant="danger"
-            className="mt-4 w-full"
-            onClick={async () => {
-              if (!confirm("Remove this tenant? This deletes their account.")) return;
-              try {
-                await deleteTenant({ tenant_id: tenant.data!.id });
-                qc.invalidateQueries({ queryKey: ["tenants"] });
-                qc.invalidateQueries({ queryKey: ["payments-all"] });
-                toast.success("Tenant removed");
-                history.back();
-              } catch (error: any) {
-                toast.error(error.message || "Could not remove tenant");
-              }
-            }}
-          >
-            <Trash2 className="h-4 w-4" /> Remove tenant
-          </PhysicsButton>
-        )}
+        <PhysicsButton
+          variant="danger"
+          className="mt-4 w-full"
+          onClick={async () => {
+            if (!confirm("Remove this tenant? This deletes their account.")) return;
+            try {
+              await deleteTenant({ tenant_id: tenant.data!.id });
+              qc.invalidateQueries({ queryKey: ["tenants"] });
+              qc.invalidateQueries({ queryKey: ["payments-all"] });
+              toast.success("Tenant removed");
+              history.back();
+            } catch (error: any) {
+              toast.error(error.message || "Could not remove tenant");
+            }
+          }}
+        >
+          <Trash2 className="h-4 w-4" /> Remove tenant
+        </PhysicsButton>
       </div>
 
       <PhysicsSheet open={open} onClose={() => setOpen(false)} title="Log payment">
@@ -223,7 +283,7 @@ function LogPaymentForm({ tenantId, onDone }: { tenantId: string; onDone: () => 
       />
       <PhysicsTextarea label="Note" placeholder="Optional" value={note} onChange={(event) => setNote(event.target.value)} />
       <PhysicsButton size="lg" className="w-full" disabled={busy} onClick={submit}>
-        {busy ? "Saving…" : "Save"}
+        {busy ? "Saving..." : "Save"}
       </PhysicsButton>
     </div>
   );

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { auth, db } from "@/integrations/client";
 import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/AppShell";
+import { PushNotificationsCard } from "@/components/PushNotificationsCard";
 import { PhysicsButton } from "@/components/PhysicsButton";
 import { PhysicsInput } from "@/components/PhysicsInput";
 import { PhysicsTextarea } from "@/components/PhysicsTextarea";
@@ -137,6 +138,8 @@ function SettingsPage() {
             )
           )}
         </div>
+
+        <PushNotificationsCard profile={me} />
 
         <PhysicsButton variant="danger" className="w-full" onClick={signOutAndLeave}>
           <LogOut className="h-4 w-4" /> Sign out

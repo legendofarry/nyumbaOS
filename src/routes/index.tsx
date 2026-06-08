@@ -1,15 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Fingerprint, KeyRound, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { auth } from "@/integrations/client";
-import { signInWithCode } from "@/lib/apt.functions";
-import { biometricsSupported, clearBiometric, getStoredBiometric, registerBiometric, unlockWithBiometric } from "@/lib/biometrics";
 import { Blobs } from "@/components/Blobs";
 import { PhysicsButton } from "@/components/PhysicsButton";
+import { auth } from "@/integrations/client";
+import { signInWithCode } from "@/lib/apt.functions";
+import {
+  biometricsSupported,
+  clearBiometric,
+  getStoredBiometric,
+  registerBiometric,
+  unlockWithBiometric,
+} from "@/lib/biometrics";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -144,7 +150,7 @@ function LoginScreen() {
               </motion.button>
               <div className="text-center">
                 <div className="font-semibold">Tap to enter</div>
-                <div className="mt-1 text-xs text-muted-foreground">Face ID · Touch ID</div>
+                <div className="mt-1 text-xs text-muted-foreground">Face ID / Touch ID</div>
               </div>
               <div className="flex gap-2">
                 <PhysicsButton variant="glass" size="sm" onClick={() => setMode("code")}>
@@ -224,10 +230,11 @@ function LoginScreen() {
                   </PhysicsButton>
                 )}
               </div>
-              {busy && <div className="text-xs text-muted-foreground">Signing you in…</div>}
+              {busy && <div className="text-xs text-muted-foreground">Signing you in...</div>}
             </motion.div>
           )}
         </AnimatePresence>
+
       </main>
 
       <footer className="w-full max-w-md text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground/70">

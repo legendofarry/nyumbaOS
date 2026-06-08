@@ -22,9 +22,11 @@ function Thread() {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const isSelfChat = me?.id === id;
 
   const other = useQuery({
     queryKey: ["person", id],
+    enabled: !isSelfChat,
     queryFn: async () => {
       const snapshot = await getDoc(doc(db, "profiles", id));
       return snapshot.exists() ? ({ id: snapshot.id, ...(snapshot.data() as Profile) } as Profile) : null;
@@ -32,7 +34,7 @@ function Thread() {
   });
   const msgs = useQuery({
     queryKey: ["thread", me?.id, id],
-    enabled: !!me?.id,
+    enabled: !!me?.id && !isSelfChat,
     queryFn: async () => {
       if (!me?.id) return [];
 
@@ -45,7 +47,11 @@ function Thread() {
         ...fromCollection<Message>(sent),
         ...fromCollection<Message>(received),
       ])
-        .filter((message) => (message.sender_id === me.id && message.recipient_id === id) || (message.sender_id === id && message.recipient_id === me.id))
+        .filter(
+          (message) =>
+            (message.sender_id === me.id && message.recipient_id === id) ||
+            (message.sender_id === id && message.recipient_id === me.id),
+        )
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     },
   });
@@ -71,6 +77,23 @@ function Thread() {
     } catch {
       setText(message);
     }
+  }
+
+  if (isSelfChat) {
+    return (
+      <div className="flex h-[100dvh] flex-col items-center justify-center px-5 text-center">
+        <div className="max-w-sm">
+          <h1 className="text-xl font-semibold tracking-tight">You can’t chat with yourself</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pick another user from the chat list to open a conversation.
+          </p>
+          <Link to="/app/messages" className="mt-6 inline-flex items-center rounded-full glass px-4 py-2 text-sm font-medium">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to messages
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -113,7 +136,7 @@ function Thread() {
             </motion.div>
           );
         })}
-        {!msgs.data?.length && <div className="mt-10 text-center text-sm text-muted-foreground">Say hi 👋</div>}
+        {!msgs.data?.length && <div className="mt-10 text-center text-sm text-muted-foreground">Say hi</div>}
       </div>
 
       <div className="px-3 pb-[calc(env(safe-area-inset-bottom)+96px)] pt-2">

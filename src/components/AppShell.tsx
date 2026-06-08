@@ -48,7 +48,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <Blobs />
       <div className="w-full max-w-md flex-1 flex flex-col pb-[88px]">
         <div className="px-5 mt-4">
-          <PwaInstallPromo />
+          <PwaInstallPromo timed />
         </div>
         {children}
       </div>

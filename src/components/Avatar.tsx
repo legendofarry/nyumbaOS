@@ -7,11 +7,27 @@ function colorFor(name: string) {
   return hues[h];
 }
 
-export function Avatar({ name, url, size = 40, className }: { name: string; url?: string | null; size?: number; className?: string }) {
-  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-  const hue = colorFor(name || "U");
+export function Avatar({
+  name,
+  url,
+  size = 40,
+  className,
+}: {
+  name?: string | null;
+  url?: string | null;
+  size?: number;
+  className?: string;
+}) {
+  const safeName = name?.trim() || "Unknown";
+  const initials = safeName
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const hue = colorFor(safeName);
   return (
-    <div
+      <div
       className={cn("relative inline-flex items-center justify-center rounded-full font-semibold overflow-hidden text-primary-foreground", className)}
       style={{
         width: size, height: size,
@@ -20,7 +36,7 @@ export function Avatar({ name, url, size = 40, className }: { name: string; url?
         fontSize: size * 0.38,
       }}
     >
-      {url ? <img src={url} alt={name} className="w-full h-full object-cover" /> : <span>{initials || "?"}</span>}
+      {url ? <img src={url} alt={safeName} className="w-full h-full object-cover" /> : <span>{initials || "?"}</span>}
     </div>
   );
 }

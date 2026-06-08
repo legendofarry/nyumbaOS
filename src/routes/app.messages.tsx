@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { ChevronRight } from "lucide-react";
@@ -15,15 +15,18 @@ export const Route = createFileRoute("/app/messages")({
 });
 
 function MessagesList() {
+  const location = useLocation();
   const { data: me } = useSessionProfile();
+  const isThreadRoute = /^\/app\/messages\/[^/]+$/.test(location.pathname);
 
   const people = useQuery({
     queryKey: ["people"],
+    enabled: !isThreadRoute,
     queryFn: async () => sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles")))),
   });
   const messages = useQuery({
     queryKey: ["my-messages", me?.id],
-    enabled: !!me?.id,
+    enabled: !!me?.id && !isThreadRoute,
     queryFn: async () => {
       if (!me?.id) return [];
       const [sent, received] = await Promise.all([
@@ -38,6 +41,9 @@ function MessagesList() {
   const threads = new Map<string, { other: Profile | undefined; last: Message }>();
   for (const message of messages.data ?? []) {
     const otherId = message.sender_id === me?.id ? message.recipient_id : message.sender_id;
+    if (!otherId || otherId === me?.id) {
+      continue;
+    }
     if (!threads.has(otherId)) {
       const other = people.data?.find((person) => person.id === otherId);
       threads.set(otherId, { other, last: message });
@@ -45,6 +51,9 @@ function MessagesList() {
   }
 
   const list = Array.from(threads.values());
+  if (isThreadRoute) {
+    return <Outlet />;
+  }
 
   return (
     <div>

@@ -6,8 +6,7 @@ import {
   Outlet,
   useRouter,
 } from "@tanstack/react-router";
-import React, { useEffect } from "react";
-import PwaInstallProvider from "@/lib/PwaInstallProvider";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -112,10 +111,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <HeadContent />
-      {/* PWA install provider registers beforeinstallprompt early */}
       <Toaster position="top-center" theme="dark" richColors />
-      <PwaInstallProvider />
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );

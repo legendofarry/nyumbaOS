@@ -12,6 +12,7 @@ import { getUnits } from "@/lib/units";
 import { askAssistant } from "@/lib/apt.functions";
 import { fromCollection, sortByCreatedAtDesc } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
+import { visiblePosts } from "@/lib/post-visibility";
 import { PageHeader } from "@/components/AppShell";
 import { PhysicsButton } from "@/components/PhysicsButton";
 
@@ -45,7 +46,7 @@ function AssistantPage() {
           tenants: fromCollection<Profile>(tenantsSnap).filter((person) => person.role === "tenant"),
           units: unitsList,
           payments: fromCollection<Payment>(paymentsSnap),
-          posts: sortByCreatedAtDesc(fromCollection<Post>(postsSnap)),
+          posts: sortByCreatedAtDesc(visiblePosts(fromCollection<Post>(postsSnap), me)),
         };
       }
 
@@ -58,7 +59,7 @@ function AssistantPage() {
       return {
         me: meSnapshot.exists() ? ({ id: meSnapshot.id, ...(meSnapshot.data() as Profile) } as Profile) : null,
         payments: fromCollection<Payment>(payments),
-        posts: sortByCreatedAtDesc(fromCollection<Post>(posts)).slice(0, 10),
+        posts: sortByCreatedAtDesc(visiblePosts(fromCollection<Post>(posts), me)).slice(0, 10),
       };
     },
   });

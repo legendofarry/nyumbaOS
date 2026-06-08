@@ -11,9 +11,6 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
-const DISMISS_KEY = "pwa-install-dismissed-at";
-const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 21;
-
 function isStandaloneMode() {
   if (typeof window === "undefined") {
     return false;
@@ -27,53 +24,11 @@ function isStandaloneMode() {
   );
 }
 
-function readDismissedAt() {
-  if (typeof window === "undefined") {
-    return 0;
-  }
-
-  try {
-    return Number(window.localStorage.getItem(DISMISS_KEY) ?? 0);
-  } catch {
-    return 0;
-  }
-}
-
-function persistDismissal() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
-  } catch {
-    // Ignore storage failures in privacy modes.
-  }
-}
-
-function clearDismissal() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(DISMISS_KEY);
-  } catch {
-    // Ignore storage failures in privacy modes.
-  }
-}
-
 export function usePwaInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(isStandaloneMode());
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const dismissedAt = readDismissedAt();
-    if (dismissedAt && Date.now() - dismissedAt < DISMISS_TTL_MS) {
-      setDismissed(true);
-    }
-
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setPromptEvent(event as BeforeInstallPromptEvent);
@@ -82,19 +37,16 @@ export function usePwaInstallPrompt() {
     const handleAppInstalled = () => {
       setInstalled(true);
       setPromptEvent(null);
-      setDismissed(false);
-      clearDismissal();
     };
 
     const handleDisplayModeChange = () => {
       setInstalled(isStandaloneMode());
     };
 
-    const mediaQuery = window.matchMedia("(display-mode: standalone)");
-
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
     window.addEventListener("appinstalled", handleAppInstalled);
 
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
     if ("addEventListener" in mediaQuery) {
       mediaQuery.addEventListener("change", handleDisplayModeChange);
     }
@@ -120,27 +72,15 @@ export function usePwaInstallPrompt() {
 
     if (choice.outcome === "accepted") {
       setInstalled(true);
-      setDismissed(false);
-      clearDismissal();
       return "accepted";
     }
 
-    setDismissed(true);
-    persistDismissal();
     return "dismissed";
-  }
-
-  function dismiss() {
-    setDismissed(true);
-    persistDismissal();
   }
 
   return {
     canPrompt: !!promptEvent,
-    dismissed,
-    dismiss,
     installed,
     promptInstall,
-    showPrompt: !installed && !dismissed,
   };
 }

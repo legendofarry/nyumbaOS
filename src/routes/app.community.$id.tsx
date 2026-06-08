@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
 
+import { Avatar } from "@/components/Avatar";
 import { db } from "@/integrations/client";
 import type { Post, Profile } from "@/integrations/types";
+import { canViewPost, visiblePosts } from "@/lib/post-visibility";
 import { useSessionProfile } from "@/lib/use-profile";
-import { Avatar } from "@/components/Avatar";
+import { sortByCreatedAtDesc, fromCollection } from "@/lib/firestore";
 
 export const Route = createFileRoute("/app/community/$id")({
   component: PostView,
@@ -29,24 +31,28 @@ function PostView() {
     enabled: !!post.data?.author_id,
     queryFn: async () => {
       if (!post.data?.author_id) return null;
-      const snap = await getDoc(doc(db, "profiles", post.data!.author_id));
+      const snap = await getDoc(doc(db, "profiles", post.data.author_id));
       return snap.exists() ? ({ id: snap.id, ...(snap.data() as Profile) } as Profile) : null;
     },
   });
 
-  if (!post.data) return <div className="px-5 pt-6 text-sm text-muted-foreground">Loading…</div>;
+  const authorPosts = useQuery({
+    queryKey: ["posts-by-author", post.data?.author_id],
+    enabled: !!post.data?.author_id,
+    queryFn: async () => {
+      if (!post.data?.author_id) return [];
+      const snapshot = await getDocs(query(collection(db, "posts"), where("author_id", "==", post.data.author_id)));
+      return sortByCreatedAtDesc(fromCollection<Post>(snapshot));
+    },
+  });
 
-  const allowed = (() => {
-    if (!me) return false;
-    if (post.data!.author_id === me.id) return true;
-    if (post.data!.audience === "all") return true;
-    if (post.data!.audience === "owner") return me.role === "owner";
-    if (post.data!.audience === "specific") {
-      if (me.role === "owner") return true;
-      return !!post.data!.target_ids?.includes(me.id);
-    }
-    return false;
-  })();
+  if (!post.data) return <div className="px-5 pt-6 text-sm text-muted-foreground">Post unavailable.</div>;
+
+  if (!canViewPost(post.data, me)) {
+    return <div className="px-5 pt-6 text-sm text-muted-foreground">Post unavailable.</div>;
+  }
+
+  const relatedPosts = visiblePosts((authorPosts.data ?? []).filter((entry) => entry.id !== post.data!.id), me);
 
   return (
     <div>
@@ -56,24 +62,40 @@ function PostView() {
         </Link>
       </header>
 
-      <div className="space-y-4 px-5">
-        {!allowed ? (
-          <div className="glass rounded-3xl p-6 text-center">
-            <div className="text-sm font-semibold">Private post</div>
-            <div className="text-xs text-muted-foreground mt-1">You are not allowed to view this post.</div>
+      <div className="space-y-5 px-5">
+        <div className="space-y-4">
+          <div className="glass-strong flex flex-col items-center rounded-3xl p-5 text-center">
+            <Avatar name={author.data?.full_name} url={author.data?.avatar_url} size={88} />
+            <div className="font-display mt-3 text-2xl font-bold">{author.data?.full_name ?? "Unknown"}</div>
+            <div className="text-sm text-muted-foreground">{new Date(post.data.created_at).toLocaleString()}</div>
+            <div className="mt-3 max-w-xl text-left text-[15px] leading-relaxed">{post.data.content}</div>
           </div>
-        ) : (
-          <article className="glass-strong rounded-3xl p-4">
-            <div className="flex items-center gap-3">
-              <Avatar name={author.data?.full_name ?? "?"} url={author.data?.avatar_url} size={40} />
-              <div className="min-w-0">
-                <div className="font-semibold">{author.data?.full_name ?? "Unknown"}</div>
-                <div className="text-[11px] text-muted-foreground">{new Date(post.data!.created_at).toLocaleString()}</div>
-              </div>
-              <span className="ml-auto rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">{post.data!.category}</span>
+          <div className="px-1">
+            <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              {post.data.category}
+            </span>
+          </div>
+        </div>
+
+        {relatedPosts.length > 0 && (
+          <div className="space-y-3">
+            <div className="px-1 text-xs uppercase tracking-wider text-muted-foreground">
+              More from {author.data?.full_name ?? "this user"}
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{post.data!.content}</p>
-          </article>
+            <div className="space-y-2">
+              {relatedPosts.map((entry) => (
+                <Link key={entry.id} to="/app/community/$id" params={{ id: entry.id }} className="glass flex items-center gap-3 rounded-2xl p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{entry.category ?? "Post"}</div>
+                    <div className="truncate text-xs text-muted-foreground">{entry.content}</div>
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {new Date(entry.created_at).toLocaleDateString()}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
