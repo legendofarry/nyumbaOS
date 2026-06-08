@@ -17,7 +17,7 @@ function NavItem({ to, label, icon: Icon, active, badgeCount }: { to: string; la
         <motion.span
           layoutId="nav-pill"
           transition={{ type: "spring", stiffness: 400, damping: 32 }}
-          className="absolute inset-x-3 inset-y-1 rounded-2xl bg-teal/15 ring-1 ring-teal/30"
+          className="absolute inset-x-3 inset-y-1 rounded-sm bg-teal/15 ring-1 ring-teal/30"
         />
       )}
       <span className={cn("relative z-10 transition-colors", active ? "text-teal" : "text-muted-foreground")}>

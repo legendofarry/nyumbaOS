@@ -1,3 +1,4 @@
+// src\lib\apt.functions.ts
 import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword, type User } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { z } from "zod";
@@ -49,6 +50,24 @@ async function seedOwnerProfile(user: User) {
   ]);
 }
 
+function friendlyError(error: any) {
+  const code = error?.code;
+
+  if (code === "auth/invalid-credential") {
+    return "Oops, that code looks invalid.";
+  }
+
+  if (code === "auth/wrong-password") {
+    return "Incorrect code.";
+  }
+
+  if (code === "auth/user-not-found") {
+    return "Yikes, we couldn't find a profile for that code.";
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
 export async function signInWithCode(code: string) {
   const email = emailForCode(code);
   const password = passwordForCode(code);
@@ -61,7 +80,7 @@ export async function signInWithCode(code: string) {
     return credential.user;
   } catch (error) {
     if (code !== OWNER_CODE || !isBootstrapOwnerError(error)) {
-      throw error;
+      throw new Error(friendlyError(error));
     }
 
     const credential = await createUserWithEmailAndPassword(auth, email, password);

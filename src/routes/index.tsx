@@ -21,7 +21,7 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Welcome - Apartment" },
+      { title: "Welcome - Makazi" },
       { name: "description", content: "Modern apartment app for tenants and owner." },
     ],
   }),
@@ -95,7 +95,7 @@ function LoginScreen() {
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-teal/20 ring-1 ring-teal/40">
             <Sparkles className="h-4 w-4 text-teal" />
           </div>
-          <span className="font-display font-bold tracking-tight">Apartment</span>
+          <span className="font-display font-bold tracking-tight">Makazi</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <span>End-to-end secure</span>
@@ -179,7 +179,7 @@ function LoginScreen() {
             >
               <div className="text-center">
                 <h1 className="font-display text-3xl font-bold">Enter your code</h1>
-                <p className="mt-1.5 text-xs text-muted-foreground">4-digit access code from the owner</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">4-digit access code</p>
               </div>
               <div className="flex gap-3">
                 {[0, 1, 2, 3].map((i) => (
@@ -237,9 +237,9 @@ function LoginScreen() {
 
       </main>
 
-      <footer className="w-full max-w-md text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground/70">
-        Private by design · KSh
-      </footer>
+      <footer className="w-full max-w-md text-center font-bold text-[10px] uppercase tracking-[0.3em] text-muted-foreground/70">
+  {new Date().getFullYear()} &copy; Makazi.
+</footer>
     </div>
   );
 }

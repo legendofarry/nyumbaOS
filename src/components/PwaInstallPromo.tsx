@@ -126,7 +126,7 @@ export function PwaInstallPromo({ variant = "compact", className, timed = false 
     const outcome = await promptInstall();
 
     if (outcome === "accepted") {
-      toast.success("Installed. Launch from your home screen for the full Android-style experience.");
+      toast.success("Installed.");
       return;
     }
 
