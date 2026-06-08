@@ -6,8 +6,11 @@ import { cn } from "@/lib/utils";
 import { Blobs } from "./Blobs";
 import { PwaInstallPromo } from "./PwaInstallPromo";
 import type { Profile } from "@/lib/use-profile";
+import { useQuery } from "@tanstack/react-query";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/integrations/client";
 
-function NavItem({ to, label, icon: Icon, active }: { to: string; label: string; icon: LucideIcon; active: boolean }) {
+function NavItem({ to, label, icon: Icon, active, badgeCount }: { to: string; label: string; icon: LucideIcon; active: boolean; badgeCount?: number }) {
   return (
     <Link to={to} className="relative flex-1 flex flex-col items-center gap-0.5 py-2">
       {active && (
@@ -21,6 +24,11 @@ function NavItem({ to, label, icon: Icon, active }: { to: string; label: string;
         <Icon className="h-5 w-5" />
       </span>
       <span className={cn("relative z-10 text-[10px] font-medium tracking-wide", active ? "text-teal" : "text-muted-foreground")}>{label}</span>
+      {badgeCount && badgeCount > 0 && (
+        <span className="absolute -top-1 -right-0.5 z-20 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-teal px-1 text-xs font-semibold text-primary-foreground">
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      )}
     </Link>
   );
 }
@@ -28,6 +36,16 @@ function NavItem({ to, label, icon: Icon, active }: { to: string; label: string;
 export function AppShell({ profile, children }: { profile: Profile; children: ReactNode }) {
   const loc = useLocation();
   const p = loc.pathname;
+
+  const unreadQ = useQuery({
+    queryKey: ["unread-count", profile.id],
+    enabled: !!profile?.id,
+    queryFn: async () => {
+      const snap = await getDocs(query(collection(db, "messages"), where("recipient_id", "==", profile.id), where("read_at", "==", null)));
+      return snap.size;
+    },
+  });
+  const unreadCount = unreadQ.data ?? 0;
 
   const items = profile.role === "owner" ? [
     { to: "/app", label: "Home", icon: Home },
@@ -55,8 +73,14 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <div className="fixed bottom-3 inset-x-0 z-40 flex justify-center px-3 pointer-events-none">
         <nav className="pointer-events-auto w-full max-w-md glass-strong rounded-[28px] px-1 py-1 flex items-stretch shadow-2xl">
           {items.map((it) => (
-            <NavItem key={it.to} to={it.to} label={it.label} icon={it.icon}
-              active={it.to === "/app" ? p === "/app" : p.startsWith(it.to)} />
+            <NavItem
+              key={it.to}
+              to={it.to}
+              label={it.label}
+              icon={it.icon}
+              active={it.to === "/app" ? p === "/app" : p.startsWith(it.to)}
+              badgeCount={it.to === "/app/messages" ? unreadCount : undefined}
+            />
           ))}
         </nav>
       </div>

@@ -38,6 +38,12 @@ function MessagesList() {
     },
   });
 
+  const unread = useQuery({
+    queryKey: ["unread-messages", me?.id],
+    enabled: !!me?.id && !isThreadRoute,
+    queryFn: async () => fromCollection<Message>(await getDocs(query(collection(db, "messages"), where("recipient_id", "==", me.id), where("read_at", "==", null)))),
+  });
+
   const threads = new Map<string, { other: Profile | undefined; last: Message }>();
   for (const message of messages.data ?? []) {
     const otherId = message.sender_id === me?.id ? message.recipient_id : message.sender_id;
@@ -70,6 +76,17 @@ function MessagesList() {
                   {last.content}
                 </div>
               </div>
+              {(() => {
+                const unreadBy = new Map<string, number>();
+                for (const m of unread.data ?? []) {
+                  if (!m.sender_id) continue;
+                  unreadBy.set(m.sender_id, (unreadBy.get(m.sender_id) ?? 0) + 1);
+                }
+                const count = unreadBy.get(other.id) ?? 0;
+                return count ? (
+                  <span className="inline-flex h-6 min-w-[20px] items-center justify-center rounded-full bg-teal px-2 text-xs font-semibold text-primary-foreground">{count > 99 ? "99+" : count}</span>
+                ) : null;
+              })()}
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           ) : null,

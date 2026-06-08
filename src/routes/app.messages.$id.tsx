@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { addDoc, collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, query, where, updateDoc } from "firebase/firestore";
 import { ArrowLeft, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -59,6 +59,25 @@ function Thread() {
   useEffect(() => {
     scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs.data?.length]);
+
+  // Mark unread incoming messages as read when viewing the thread
+  useEffect(() => {
+    if (!me?.id || !msgs.data?.length) return;
+    const toMark = (msgs.data ?? []).filter((m) => m.recipient_id === me.id && !m.read_at);
+    if (!toMark.length) return;
+
+    (async () => {
+      try {
+        await Promise.all(
+          toMark.map((m) => updateDoc(doc(db, "messages", m.id), { read_at: new Date().toISOString() }))
+        );
+        qc.invalidateQueries({ queryKey: ["thread", me.id, id] });
+        qc.invalidateQueries({ queryKey: ["my-messages", me.id] });
+      } catch (error) {
+        console.error("Failed to mark messages read", error);
+      }
+    })();
+  }, [msgs.data, me?.id, id, qc]);
 
   async function send() {
     if (!text.trim() || !me) return;
