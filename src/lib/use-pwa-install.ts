@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type BeforeInstallPromptOutcome = "accepted" | "dismissed" | "unavailable";
 
@@ -24,63 +24,135 @@ function isStandaloneMode() {
   );
 }
 
-export function usePwaInstallPrompt() {
-  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(isStandaloneMode());
+type InstallSnapshot = {
+  canPrompt: boolean;
+  installed: boolean;
+};
 
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setPromptEvent(event as BeforeInstallPromptEvent);
-    };
+type WindowWithPwaFlag = Window & {
+  __pwaInstallListenersAttached?: boolean;
+};
 
-    const handleAppInstalled = () => {
-      setInstalled(true);
-      setPromptEvent(null);
-    };
+let promptEvent: BeforeInstallPromptEvent | null = null;
+let snapshot: InstallSnapshot = {
+  canPrompt: false,
+  installed: isStandaloneMode(),
+};
+const listeners = new Set<() => void>();
 
-    const handleDisplayModeChange = () => {
-      setInstalled(isStandaloneMode());
-    };
+function emit() {
+  listeners.forEach((listener) => {
+    listener();
+  });
+}
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-    window.addEventListener("appinstalled", handleAppInstalled);
+function setSnapshot(next: InstallSnapshot) {
+  if (snapshot.canPrompt === next.canPrompt && snapshot.installed === next.installed) {
+    return;
+  }
 
-    const mediaQuery = window.matchMedia("(display-mode: standalone)");
-    if ("addEventListener" in mediaQuery) {
-      mediaQuery.addEventListener("change", handleDisplayModeChange);
+  snapshot = next;
+  emit();
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  return snapshot;
+}
+
+function getServerSnapshot() {
+  return snapshot;
+}
+
+function ensureInstallListeners() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const win = window as WindowWithPwaFlag;
+  if (win.__pwaInstallListenersAttached) {
+    return;
+  }
+  win.__pwaInstallListenersAttached = true;
+
+  const handleBeforeInstallPrompt = (event: Event) => {
+    event.preventDefault();
+    promptEvent = event as BeforeInstallPromptEvent;
+    setSnapshot({
+      canPrompt: true,
+      installed: snapshot.installed,
+    });
+  };
+
+  const handleAppInstalled = () => {
+    promptEvent = null;
+    setSnapshot({
+      canPrompt: false,
+      installed: true,
+    });
+  };
+
+  const handleDisplayModeChange = () => {
+    const nowInstalled = isStandaloneMode();
+    if (nowInstalled) {
+      promptEvent = null;
     }
 
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-      window.removeEventListener("appinstalled", handleAppInstalled);
+    setSnapshot({
+      canPrompt: nowInstalled ? false : !!promptEvent,
+      installed: nowInstalled,
+    });
+  };
 
-      if ("removeEventListener" in mediaQuery) {
-        mediaQuery.removeEventListener("change", handleDisplayModeChange);
-      }
-    };
-  }, []);
+  window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
+  window.addEventListener("appinstalled", handleAppInstalled);
 
+  const mediaQuery = window.matchMedia("(display-mode: standalone)");
+  if ("addEventListener" in mediaQuery) {
+    mediaQuery.addEventListener("change", handleDisplayModeChange);
+  }
+}
+
+ensureInstallListeners();
+
+export function usePwaInstallPrompt() {
   async function promptInstall(): Promise<BeforeInstallPromptOutcome> {
     if (!promptEvent) {
       return "unavailable";
     }
 
-    await promptEvent.prompt();
-    const choice = await promptEvent.userChoice;
-    setPromptEvent(null);
+    const currentEvent = promptEvent;
+    await currentEvent.prompt();
+    const choice = await currentEvent.userChoice;
+    promptEvent = null;
 
     if (choice.outcome === "accepted") {
-      setInstalled(true);
+      setSnapshot({
+        canPrompt: false,
+        installed: true,
+      });
       return "accepted";
     }
+
+    setSnapshot({
+      canPrompt: false,
+      installed: snapshot.installed,
+    });
 
     return "dismissed";
   }
 
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
   return {
-    canPrompt: !!promptEvent,
-    installed,
+    canPrompt: state.canPrompt,
+    installed: state.installed,
     promptInstall,
   };
 }

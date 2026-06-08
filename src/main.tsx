@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import "./lib/use-pwa-install";
 
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
