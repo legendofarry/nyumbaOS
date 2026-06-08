@@ -1,1 +1,4 @@
-/* /index.html 200
+/*    /index.html   200
+/sw.js  /sw.js       200
+/manifest.webmanifest /manifest.webmanifest 200
+/pwa-icon.svg /pwa-icon.svg 200

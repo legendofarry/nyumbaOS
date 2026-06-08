@@ -73,7 +73,8 @@ export async function signInWithCode(code: string) {
 const CreateTenantSchema = z.object({
   full_name: z.string().min(1).max(80),
   phone: z.string().max(20).optional(),
-  unit_id: z.string().uuid(),
+  // unit_id can be a Firestore UUID or a short static id like 'G1'/'F2'
+  unit_id: z.string().min(1),
   agreed_rent: z.number().nonnegative(),
   initial_payment: z.number().nonnegative().default(0),
   payment_note: z.string().max(120).optional(),

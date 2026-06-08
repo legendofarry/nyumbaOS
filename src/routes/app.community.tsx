@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDoc, collection, getDocs } from "firebase/firestore";
 import { Crown, Eye, Plus, Send, Users } from "lucide-react";
@@ -35,6 +35,12 @@ function CommunityPage() {
     queryFn: async () => sortByName(fromCollection<Profile>(await getDocs(collection(db, "profiles")))),
   });
 
+  const loc = useLocation();
+  // If URL is /app/community/:id render the child route (full-screen post view)
+  if (typeof window !== "undefined" && /^\/app\/community\/[^/]+$/.test(loc.pathname)) {
+    return <Outlet />;
+  }
+
   return (
     <div>
       <PageHeader
@@ -50,29 +56,31 @@ function CommunityPage() {
         {(posts.data ?? []).map((post) => {
           const author = people.data?.find((person) => person.id === post.author_id);
           return (
-            <motion.article key={post.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="glass-strong rounded-3xl p-4">
-              <div className="flex items-center gap-3">
-                <Avatar name={author?.full_name ?? "?"} url={author?.avatar_url} size={40} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 truncate font-semibold">
-                    {author?.full_name ?? "Unknown"}
-                    {author?.role === "owner" && (
-                      <span className="flex items-center gap-1 rounded-full bg-teal/20 px-1.5 py-0.5 text-[10px] text-teal">
-                        <Crown className="h-2.5 w-2.5" />
-                        Owner
-                      </span>
-                    )}
+            <Link to="/app/community/$id" params={{ id: post.id }} key={post.id}>
+              <motion.article initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="glass-strong rounded-3xl p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar name={author?.full_name ?? "?"} url={author?.avatar_url} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 truncate font-semibold">
+                      {author?.full_name ?? "Unknown"}
+                      {author?.role === "owner" && (
+                        <span className="flex items-center gap-1 rounded-full bg-teal/20 px-1.5 py-0.5 text-[10px] text-teal">
+                          <Crown className="h-2.5 w-2.5" />
+                          Owner
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {new Date(post.created_at).toLocaleString()} · {audienceLabel(post)}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Date(post.created_at).toLocaleString()} · {audienceLabel(post)}
-                  </div>
+                  <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {post.category}
+                  </span>
                 </div>
-                <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {post.category}
-                </span>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</p>
-            </motion.article>
+                <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</p>
+              </motion.article>
+            </Link>
           );
         })}
         {!posts.data?.length && <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">No posts yet. Start the conversation.</div>}

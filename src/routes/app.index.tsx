@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { db } from "@/integrations/client";
+import { getUnits, getUnit } from "@/lib/units";
 import type { Payment, Profile, Unit } from "@/integrations/types";
 import { fromCollection, sortByCreatedAtDesc, sortByName } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
@@ -41,9 +42,10 @@ function OwnerHome({ profile }: { profile: Profile }) {
   const units = useQuery({
     queryKey: ["units"],
     queryFn: async () => {
-      const snapshot = await getDocs(collection(db, "units"));
-      return fromCollection<Unit>(snapshot).sort((a, b) => `${a.floor}-${a.label}`.localeCompare(`${b.floor}-${b.label}`));
+      const list = await getUnits();
+      return list.sort((a, b) => `${a.floor}-${a.label}`.localeCompare(`${b.floor}-${b.label}`));
     },
+    onError: (err) => console.error("units fetch error:", err),
   });
   const payments = useQuery({
     queryKey: ["payments-all"],
@@ -90,6 +92,9 @@ function OwnerHome({ profile }: { profile: Profile }) {
         </motion.div>
 
         <div className="flex gap-3">
+            {units.isError && (
+              <div className="w-full text-sm text-center text-destructive">Could not load units (see console)</div>
+            )}
           <Stat icon={Users} label="Tenants" value={`${occupied}/${totalUnits}`} />
           <Stat icon={HomeIcon} label="Units" value={totalUnits} />
           <Stat
@@ -180,8 +185,7 @@ function TenantHome({ profile }: { profile: Profile }) {
     enabled: !!profile.unit_id,
     queryFn: async () => {
       if (!profile.unit_id) return null;
-      const snapshot = await getDoc(doc(db, "units", profile.unit_id));
-      return snapshot.exists() ? ({ id: snapshot.id, ...(snapshot.data() as Unit) } as Unit) : null;
+      return getUnit(profile.unit_id);
     },
   });
   const payments = useQuery({

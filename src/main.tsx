@@ -15,6 +15,18 @@ root.render(
   </StrictMode>,
 );
 
+// Ensure SW is registered as early as possible in production
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker
+    .register("/sw.js")
+    .then((registration) => {
+      console.log("Service worker registered:", registration);
+    })
+    .catch((err) => {
+      console.warn("Service worker registration failed:", err);
+    });
+}
+
 // Register service worker in production builds
 if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
   if (import.meta.env.PROD) {

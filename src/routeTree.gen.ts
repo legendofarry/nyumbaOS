@@ -17,6 +17,7 @@ import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppMessagesRouteImport } from './routes/app.messages'
 import { Route as AppCommunityRouteImport } from './routes/app.community'
+import { Route as AppCommunityIdRouteImport } from './routes/app.community.$id'
 import { Route as AppAssistantRouteImport } from './routes/app.assistant'
 import { Route as AppTenantsIdRouteImport } from './routes/app.tenants.$id'
 import { Route as AppMessagesIdRouteImport } from './routes/app.messages.$id'
@@ -76,12 +77,18 @@ const AppMessagesIdRoute = AppMessagesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppMessagesRoute,
 } as any)
+const AppCommunityIdRoute = AppCommunityIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppCommunityRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/app/assistant': typeof AppAssistantRoute
   '/app/community': typeof AppCommunityRoute
+  '/app/community/$id': typeof AppCommunityIdRoute
   '/app/messages': typeof AppMessagesRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/settings': typeof AppSettingsRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/community': typeof AppCommunityRoute
+  '/app/community/$id': typeof AppCommunityIdRoute
   '/app/messages': typeof AppMessagesRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/settings': typeof AppSettingsRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/app/assistant': typeof AppAssistantRoute
   '/app/community': typeof AppCommunityRoute
+  '/app/community/$id': typeof AppCommunityIdRoute
   '/app/messages': typeof AppMessagesRouteWithChildren
   '/app/people': typeof AppPeopleRoute
   '/app/settings': typeof AppSettingsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/assistant'
     | '/app/community'
+    | '/app/community/$id'
     | '/app/messages'
     | '/app/people'
     | '/app/settings'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app/assistant'
     | '/app/community'
+    | '/app/community/$id'
     | '/app/messages'
     | '/app/people'
     | '/app/settings'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/assistant'
     | '/app/community'
+    | '/app/community/$id'
     | '/app/messages'
     | '/app/people'
     | '/app/settings'
@@ -220,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCommunityRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/community/$id': {
+      id: '/app/community/$id'
+      path: '/$id'
+      fullPath: '/app/community/$id'
+      preLoaderRoute: typeof AppCommunityIdRouteImport
+      parentRoute: typeof AppCommunityRoute
+    }
     '/app/assistant': {
       id: '/app/assistant'
       path: '/assistant'
@@ -268,9 +287,21 @@ const AppTenantsRouteWithChildren = AppTenantsRoute._addFileChildren(
   AppTenantsRouteChildren,
 )
 
+interface AppCommunityRouteChildren {
+  AppCommunityIdRoute: typeof AppCommunityIdRoute
+}
+
+const AppCommunityRouteChildren: AppCommunityRouteChildren = {
+  AppCommunityIdRoute: AppCommunityIdRoute,
+}
+
+const AppCommunityRouteWithChildren = AppCommunityRoute._addFileChildren(
+  AppCommunityRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
-  AppCommunityRoute: typeof AppCommunityRoute
+  AppCommunityRoute: typeof AppCommunityRouteWithChildren
   AppMessagesRoute: typeof AppMessagesRouteWithChildren
   AppPeopleRoute: typeof AppPeopleRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -280,7 +311,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAssistantRoute: AppAssistantRoute,
-  AppCommunityRoute: AppCommunityRoute,
+  AppCommunityRoute: AppCommunityRouteWithChildren,
   AppMessagesRoute: AppMessagesRouteWithChildren,
   AppPeopleRoute: AppPeopleRoute,
   AppSettingsRoute: AppSettingsRoute,

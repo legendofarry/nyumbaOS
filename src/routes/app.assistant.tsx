@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 
 import { db } from "@/integrations/client";
 import type { Payment, Post, Profile, Unit } from "@/integrations/types";
+import { getUnits } from "@/lib/units";
 import { askAssistant } from "@/lib/apt.functions";
 import { fromCollection, sortByCreatedAtDesc } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
@@ -34,17 +35,17 @@ function AssistantPage() {
       if (!me) return null;
 
       if (me.role === "owner") {
-        const [tenants, units, payments, posts] = await Promise.all([
+        const [tenantsSnap, unitsList, paymentsSnap, postsSnap] = await Promise.all([
           getDocs(collection(db, "profiles")),
-          getDocs(collection(db, "units")),
+          getUnits(),
           getDocs(collection(db, "payments")),
           getDocs(collection(db, "posts")),
         ]);
         return {
-          tenants: fromCollection<Profile>(tenants).filter((person) => person.role === "tenant"),
-          units: fromCollection<Unit>(units),
-          payments: fromCollection<Payment>(payments),
-          posts: sortByCreatedAtDesc(fromCollection<Post>(posts)),
+          tenants: fromCollection<Profile>(tenantsSnap).filter((person) => person.role === "tenant"),
+          units: unitsList,
+          payments: fromCollection<Payment>(paymentsSnap),
+          posts: sortByCreatedAtDesc(fromCollection<Post>(postsSnap)),
         };
       }
 

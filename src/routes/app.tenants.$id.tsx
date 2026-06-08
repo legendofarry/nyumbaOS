@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { db } from "@/integrations/client";
 import type { Payment, Profile, Unit } from "@/integrations/types";
+import { getUnit } from "@/lib/units";
 import { deleteTenant } from "@/lib/apt.functions";
 import { fromCollection, sortByCreatedAtDesc } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
@@ -40,8 +41,7 @@ function TenantProfile() {
     enabled: !!tenant.data?.unit_id,
     queryFn: async () => {
       if (!tenant.data?.unit_id) return null;
-      const snapshot = await getDoc(doc(db, "units", tenant.data.unit_id));
-      return snapshot.exists() ? ({ id: snapshot.id, ...(snapshot.data() as Unit) } as Unit) : null;
+      return getUnit(tenant.data.unit_id);
     },
   });
   const payments = useQuery({

@@ -4,6 +4,7 @@ import { Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePwaInstallPrompt } from "@/lib/use-pwa-install";
+import { getInstallPrompt } from "@/lib/PwaInstallProvider";
 import { cn } from "@/lib/utils";
 import { PhysicsButton } from "./PhysicsButton";
 
@@ -25,10 +26,6 @@ function FeatureChip({ children }: { children: string }) {
 export function PwaInstallPromo({ variant = "compact", className }: Props) {
   const { canPrompt, dismiss, installed, promptInstall, showPrompt } = usePwaInstallPrompt();
 
-  if (installed || !showPrompt) {
-    return null;
-  }
-
   const isHero = variant === "hero";
   const installBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -48,19 +45,24 @@ export function PwaInstallPromo({ variant = "compact", className }: Props) {
     };
   }, [showPrompt]);
 
+  if (installed || !showPrompt) {
+    return null;
+  }
+
   const onInstall = async () => {
-    const outcome = await promptInstall();
-    if (outcome === "accepted") {
-      toast.success("Installed. Launch from your home screen for the full Android-style experience.");
+    const prompt = getInstallPrompt();
+    if (!prompt) {
+      console.log("Install not available");
       return;
     }
 
-    if (outcome === "dismissed") {
-      toast.message("No problem. You can install it later from your browser menu.");
-      return;
+    try {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      console.log("Install result:", choice.outcome);
+    } catch (err) {
+      console.warn("Install prompt failed", err);
     }
-
-    toast.message("In Chrome on Android, use the browser menu and choose Install app.");
   };
   return (
     <div

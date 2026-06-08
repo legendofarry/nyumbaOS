@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { collection, getDocs } from "firebase/firestore";
 import { Copy, ChevronRight, Plus } from "lucide-react";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { db } from "@/integrations/client";
 import type { Profile, Unit } from "@/integrations/types";
+import { getUnits } from "@/lib/units";
 import { createTenant } from "@/lib/apt.functions";
 import { fromCollection, sortByName } from "@/lib/firestore";
 import { useSessionProfile } from "@/lib/use-profile";
@@ -35,12 +36,18 @@ function TenantsPage() {
   });
   const units = useQuery({
     queryKey: ["units"],
-    queryFn: async () => fromCollection<Unit>(await getDocs(collection(db, "units"))).sort((a, b) => `${a.floor}-${a.label}`.localeCompare(`${b.floor}-${b.label}`)),
+    queryFn: async () => (await getUnits()).sort((a, b) => `${a.floor}-${a.label}`.localeCompare(`${b.floor}-${b.label}`)),
+    onError: (err) => console.error("units fetch error:", err),
   });
 
-  if (profile?.role !== "owner") {
-    return <div className="px-5 pt-6 text-sm text-muted-foreground">Only the owner can manage tenants.</div>;
+  const loc = useLocation();
+  // If URL is /app/tenants/:id, render the child route full-screen via Outlet
+  if (typeof window !== "undefined" && /^\/app\/tenants\/[^/]+$/.test(loc.pathname)) {
+    return <Outlet />;
   }
+
+  // Allow non-owner users to view tenant profiles (read-only). Owner-only actions
+  // (adding tenants) are shown conditionally below.
 
   const occupiedUnitIds = new Set((tenants.data ?? []).map((tenant) => tenant.unit_id));
   const freeUnits = (units.data ?? []).filter((unit) => !occupiedUnitIds.has(unit.id));
@@ -51,12 +58,15 @@ function TenantsPage() {
         title="Tenants"
         subtitle={`${tenants.data?.length ?? 0} of ${units.data?.length ?? 0} units occupied`}
         right={
-          <PhysicsButton size="sm" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> Add
-          </PhysicsButton>
+          profile?.role === "owner" ? (
+            <PhysicsButton size="sm" onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" /> Add
+            </PhysicsButton>
+          ) : null
         }
       />
       <div className="space-y-2 px-5">
+        {units.isError && <div className="glass rounded-2xl p-4 text-center text-sm text-destructive">Failed to load units — check console</div>}
         {(tenants.data ?? []).map((tenant) => {
           const unit = units.data?.find((entry) => entry.id === tenant.unit_id);
           return (
